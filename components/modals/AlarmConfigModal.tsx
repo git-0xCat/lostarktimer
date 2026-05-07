@@ -2,8 +2,29 @@ import React from 'react'
 import { Howl, Howler } from 'howler'
 import { alert1, alert2, alert3, alert4, alert5, alert6 } from '../../sounds'
 import useLocalStorage from '../../util/useLocalStorage'
-import { IconVolume2, IconVolume3 } from '@tabler/icons-react'
+import { Volume1, Volume2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
+import { Separator } from '@/components/ui/separator'
 
 const sounds = {
   'Alert 1': alert1,
@@ -20,7 +41,43 @@ type AlertSoundKeys =
   | 'Alert 4'
   | 'Alert 5'
   | 'Alert 6'
-const AlarmConfigModal = () => {
+
+interface Props {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+const Row = ({
+  htmlFor,
+  label,
+  hint,
+  control,
+}: {
+  htmlFor: string
+  label: React.ReactNode
+  hint?: React.ReactNode
+  control: React.ReactNode
+}) => (
+  <div className="flex items-center justify-between gap-4 py-2">
+    <Label htmlFor={htmlFor} className="cursor-pointer text-sm">
+      {label}
+      {hint ? (
+        <span className="text-muted-foreground ml-1 text-xs">{hint}</span>
+      ) : null}
+    </Label>
+    {control}
+  </div>
+)
+
+const defaultTheme = (): boolean =>
+  Boolean(
+    typeof window !== 'undefined' &&
+      (localStorage.getItem('darkMode') ||
+        (window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches))
+  )
+
+const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
   const { t } = useTranslation('alarmConfig')
 
   const [viewLocalizedTime, setViewLocalizedTime] = useLocalStorage<boolean>(
@@ -33,10 +90,10 @@ const AlarmConfigModal = () => {
     'view24HrTime',
     false
   )
-  const defaultTheme = (): boolean => {
-    return Boolean(localStorage.getItem('darkMode') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches))
-  }
-  const [darkMode, setDarkMode] = useLocalStorage<boolean>('darkMode', defaultTheme)
+  const [darkMode, setDarkMode] = useLocalStorage<boolean>(
+    'darkMode',
+    defaultTheme
+  )
   const [alertSound, setAlertSound] = useLocalStorage<string>(
     'alertSound',
     'muted'
@@ -51,210 +108,195 @@ const AlarmConfigModal = () => {
     'hideDisabledEvents',
     false
   )
-  const [disabledAlarms, setDisabledAlarms] = useLocalStorage<{
-    [key: string]: number
-  }>('disabledAlarms', {})
+  const [, setDisabledAlarms] = useLocalStorage<{ [key: string]: number }>(
+    'disabledAlarms',
+    {}
+  )
   const [volume, setVolume] = useLocalStorage('volume', 0.4)
-  return (
-    <>
-      <input type="checkbox" id="alarm-config-modal" className="modal-toggle" />
-      <div className="modal items-center overflow-x-hidden">
-        <div className="modal-box p-0">
-          <div className="w-full bg-base-200 p-2">
-            <h3 className="text-center text-lg font-bold uppercase">
-              {t('alarm-settings')}
-            </h3>
-          </div>
-          <div className="flex flex-row space-x-4 p-4">
-            <div className="w-full">
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('move-disabled-events-to-bottom')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setMoveDisabledEventsBottom(
-                      (e.target as HTMLInputElement).checked
-                    )
-                  }
-                  defaultChecked={moveDisabledEventsBottom}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('hide-disabled-events')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setHideDisableEvents((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={hideDisabledEvents}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('group-repeat-events')}{' '}
-                  <span title="Combine all instances of Grand Prix, Field Bosses, Chaos Gates, and Ghost Ships into single events">
-                    [?]
-                  </span>
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setHideGrandPrix((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={hideGrandPrix}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <div className="flex w-full items-center">
-                <button
-                  className="btn btn-warning btn-xs mx-auto"
-                  onClick={(e) => setDisabledAlarms({})}
-                >
-                  {t('reset-disabled-events')}
-                </button>
-              </div>
-            </div>
-            <div className="w-full">
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('enable-desktop-notifications')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) => {
-                    if (!('Notification' in window)) {
-                      alert(
-                        'This browser does not support desktop notification'
-                      )
-                      return
-                    } else if (Notification.permission === 'granted') {
-                      setDesktopNotifications(
-                        (e.target as HTMLInputElement).checked
-                      )
-                    } else if (Notification.permission !== 'denied') {
-                      ;(e.target as HTMLInputElement).checked = false
-                      Notification.requestPermission(function (permission) {
-                        if (permission === 'granted') {
-                          setDesktopNotifications(
-                            (e.target as HTMLInputElement).checked
-                          )
-                        }
-                      })
-                    }
-                  }}
-                  defaultChecked={desktopNotifications}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('common:dark-mode')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setDarkMode((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={darkMode}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('common:view-in-24-hr')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setView24HrTime((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={view24HrTime}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('common:view-in-current-time')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setViewLocalizedTime((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={viewLocalizedTime}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text mr-2 w-4/5 text-right font-semibold">
-                  {t('alert-sound')}
-                </span>
-                <select
-                  className="select select-bordered select-sm focus:outline-0"
-                  value={alertSound}
-                  onChange={(e) => {
-                    setAlertSound(e.target.value)
-                    if (e.target.value === 'muted') return
-                    let soundName = e.target.value
 
-                    let s = new Howl({
-                      src: sounds[
-                        soundName as AlertSoundKeys
-                      ] as unknown as string,
-                    })
-                    s.play()
-                  }}
-                >
-                  <option value="muted">{t('muted')} 🔇</option>
-                  {Object.entries(sounds).map(([soundName, sound]) => (
-                    <option
-                      key={soundName}
-                      value={soundName}
-                    >{`${soundName}`}</option>
-                  ))}
-                </select>
-              </label>
-              <div className="ml-auto flex w-3/4 justify-end gap-1">
-                <IconVolume2 className="stroke-1" />
-                <input
-                  className="range range-accent range-xs self-center"
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.02}
-                  defaultValue={volume}
-                  onChange={(event) => {
-                    setVolume(event.target.valueAsNumber)
-                  }}
-                  disabled={alertSound === 'muted'}
-                  onMouseUpCapture={(event) => {
-                    let s = new Howl({
-                      src: sounds[
-                        alertSound as AlertSoundKeys
-                      ] as unknown as string,
-                    })
-                    Howler.stop()
-                    s.play()
-                  }}
+  const requestNotificationPermission = (checked: boolean) => {
+    if (typeof window === 'undefined') return
+    if (!('Notification' in window)) {
+      alert('This browser does not support desktop notification')
+      return
+    }
+    if (Notification.permission === 'granted') {
+      setDesktopNotifications(checked)
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission((permission) => {
+        if (permission === 'granted') setDesktopNotifications(checked)
+      })
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{t('alarm-settings')}</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-x-8 gap-y-2 md:grid-cols-2">
+          <div className="flex flex-col">
+            <Row
+              htmlFor="moveDisabled"
+              label={t('move-disabled-events-to-bottom')}
+              control={
+                <Checkbox
+                  id="moveDisabled"
+                  checked={!!moveDisabledEventsBottom}
+                  onCheckedChange={(c) =>
+                    setMoveDisabledEventsBottom(c === true)
+                  }
                 />
-                <IconVolume3 className="stroke-1" />
-              </div>
+              }
+            />
+            <Row
+              htmlFor="hideDisabled"
+              label={t('hide-disabled-events')}
+              control={
+                <Checkbox
+                  id="hideDisabled"
+                  checked={!!hideDisabledEvents}
+                  onCheckedChange={(c) => setHideDisableEvents(c === true)}
+                />
+              }
+            />
+            <Row
+              htmlFor="groupRepeats"
+              label={t('group-repeat-events')}
+              hint="[?]"
+              control={
+                <Checkbox
+                  id="groupRepeats"
+                  checked={!!hideGrandPrix}
+                  onCheckedChange={(c) => setHideGrandPrix(c === true)}
+                />
+              }
+            />
+
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDisabledAlarms({})}
+              >
+                {t('reset-disabled-events')}
+              </Button>
             </div>
           </div>
-          <div className="modal-action mb-5 justify-center">
-            <label htmlFor="alarm-config-modal" className="btn btn-block w-4/5">
-              {t('common:all-done')}!
-            </label>
+
+          <div className="flex flex-col">
+            <Row
+              htmlFor="desktopNotif"
+              label={t('enable-desktop-notifications')}
+              control={
+                <Checkbox
+                  id="desktopNotif"
+                  checked={!!desktopNotifications}
+                  onCheckedChange={(c) =>
+                    requestNotificationPermission(c === true)
+                  }
+                />
+              }
+            />
+            <Row
+              htmlFor="darkMode"
+              label={t('common:dark-mode')}
+              control={
+                <Checkbox
+                  id="darkMode"
+                  checked={!!darkMode}
+                  onCheckedChange={(c) => setDarkMode(c === true)}
+                />
+              }
+            />
+            <Row
+              htmlFor="view24Hr"
+              label={t('common:view-in-24-hr')}
+              control={
+                <Checkbox
+                  id="view24Hr"
+                  checked={!!view24HrTime}
+                  onCheckedChange={(c) => setView24HrTime(c === true)}
+                />
+              }
+            />
+            <Row
+              htmlFor="viewLocalized"
+              label={t('common:view-in-current-time')}
+              control={
+                <Checkbox
+                  id="viewLocalized"
+                  checked={!!viewLocalizedTime}
+                  onCheckedChange={(c) => setViewLocalizedTime(c === true)}
+                />
+              }
+            />
+
+            <Separator className="my-3" />
+
+            <div className="flex items-center justify-between gap-4 py-1">
+              <Label className="text-sm">{t('alert-sound')}</Label>
+              <Select
+                value={alertSound}
+                onValueChange={(v) => {
+                  setAlertSound(v)
+                  if (v === 'muted') return
+                  new Howl({
+                    src: sounds[v as AlertSoundKeys] as unknown as string,
+                  }).play()
+                }}
+              >
+                <SelectTrigger size="sm" className="min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="muted">{t('muted')} 🔇</SelectItem>
+                  {Object.keys(sounds).map((soundName) => (
+                    <SelectItem key={soundName} value={soundName}>
+                      {soundName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2">
+              <Volume1 className="text-muted-foreground size-4" />
+              <Slider
+                disabled={alertSound === 'muted'}
+                min={0}
+                max={1}
+                step={0.02}
+                value={[volume ?? 0.4]}
+                onValueChange={([v]) => {
+                  setVolume(v)
+                  Howler.volume(v)
+                }}
+                onValueCommit={() => {
+                  if (alertSound === 'muted') return
+                  Howler.stop()
+                  new Howl({
+                    src: sounds[
+                      alertSound as AlertSoundKeys
+                    ] as unknown as string,
+                  }).play()
+                }}
+                className="flex-1"
+              />
+              <Volume2 className="text-muted-foreground size-4" />
+            </div>
           </div>
         </div>
-      </div>
-    </>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button className="w-full sm:w-auto">{t('common:all-done')}!</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

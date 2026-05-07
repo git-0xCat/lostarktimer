@@ -2,35 +2,55 @@ import React from 'react'
 import {
   IconBrandGithub,
   IconBrandPaypal,
-  IconCoffee,
   IconFileCode,
 } from '@tabler/icons-react'
 
-const SideBar = () => {
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+
+interface Props {
+  onOpenGithub: () => void
+  onOpenChangelog: () => void
+}
+
+const SideBar = ({ onOpenGithub, onOpenChangelog }: Props) => {
   return (
     <nav className="invisible fixed bottom-0 left-5 z-40 flex h-2/6 w-10 justify-center lg:visible">
-      <div className="flex flex-grow flex-col items-center gap-2">
-        <label
-          htmlFor="gh-modal"
-          className="transform cursor-pointer p-2 transition hover:-translate-y-px hover:text-sky-400"
+      <div className="flex grow flex-col items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="GitHub"
+          onClick={onOpenGithub}
+          className="hover:text-sky-400"
         >
           <IconBrandGithub />
-        </label>
-        <a
-          href="https://www.paypal.com/paypalme/cwjoshuak"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="transform p-2 transition hover:-translate-y-px hover:text-orange-400"
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="PayPal"
+          asChild
+          className="hover:text-orange-400"
         >
-          <IconBrandPaypal />
-        </a>
-        <label
-          htmlFor="changelog-modal"
-          className="transform cursor-pointer p-2 transition hover:-translate-y-px hover:text-sky-400"
+          <a
+            href="https://www.paypal.com/paypalme/cwjoshuak"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <IconBrandPaypal />
+          </a>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Changelog"
+          onClick={onOpenChangelog}
+          className="hover:text-sky-400"
         >
           <IconFileCode />
-        </label>
-        <span className="z-0 mx-auto mt-3 h-full w-px bg-stone-200" />
+        </Button>
+        <Separator orientation="vertical" className="mt-3" />
       </div>
     </nav>
   )

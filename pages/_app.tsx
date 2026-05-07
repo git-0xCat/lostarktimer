@@ -1,4 +1,5 @@
 import '../styles/globals.css'
+import { useState } from 'react'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
@@ -10,7 +11,10 @@ import { IconBrandTwitch } from '@tabler/icons-react'
 import { SWRConfig } from 'swr'
 import NavBar from '../components/NavBar'
 
-function MyApp({ Component, pageProps, ...AppProps }: AppProps) {
+function MyApp({ Component, pageProps }: AppProps) {
+  const [ghOpen, setGhOpen] = useState(false)
+  const [changelogOpen, setChangelogOpen] = useState(false)
+
   return (
     <>
       <Head>
@@ -38,9 +42,12 @@ function MyApp({ Component, pageProps, ...AppProps }: AppProps) {
       </Head>
 
       <NavBar />
-      <ChangeLogModal />
-      <GitHubModal />
-      <SideBar />
+      <ChangeLogModal open={changelogOpen} onOpenChange={setChangelogOpen} />
+      <GitHubModal open={ghOpen} onOpenChange={setGhOpen} />
+      <SideBar
+        onOpenGithub={() => setGhOpen(true)}
+        onOpenChangelog={() => setChangelogOpen(true)}
+      />
 
       <SWRConfig
         value={{
@@ -53,29 +60,21 @@ function MyApp({ Component, pageProps, ...AppProps }: AppProps) {
       >
         <Component className="z-0" {...pageProps} />
       </SWRConfig>
-      <footer className="relative bottom-0 z-50 flex h-12 w-full items-center justify-center border-t bg-base-300">
+
+      <footer className="bg-background text-muted-foreground relative bottom-0 z-50 flex h-12 w-full items-center justify-center border-t text-sm">
         I might start streaming myself coding the website, just for fun.
         Starting Monday. Follow ={'>'}
         <a
-          className="ml-1"
+          className="ml-1 inline-flex items-center"
           href="https://www.twitch.tv/delay3d"
           rel="noopener noreferrer"
           style={{ color: '#6441a5' }}
         >
-          <IconBrandTwitch className="inline" /> https://www.twitch.tv/delay3d
+          <IconBrandTwitch className="mr-1 inline" />{' '}
+          https://www.twitch.tv/delay3d
         </a>
       </footer>
-      <div className="relative w-screen"></div>
-      {process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
-        <Script
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          data-cf-beacon='{"token": "a4240e015e2044669726099a04d1e7a7"}'
-          strategy="afterInteractive"
-          onError={(e) => {
-            console.error('Script failed to load', e)
-          }}
-        />
-      ) : null}
+
       {process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
         <>
           <Script
@@ -95,7 +94,7 @@ function MyApp({ Component, pageProps, ...AppProps }: AppProps) {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', 'G-Z2D1S06JHH');`}
-          </Script>{' '}
+          </Script>
         </>
       ) : null}
     </>

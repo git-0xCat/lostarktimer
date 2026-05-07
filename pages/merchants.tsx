@@ -87,6 +87,7 @@ const Merchants: NextPage = (props) => {
   const [merchantTableData, setMerchantTableData] = useState<
     Array<React.JSX.Element>
   >([])
+  const [configOpen, setConfigOpen] = useState(false)
 
   const [wanderingMerchants, setWanderingMerchants] = useState<
     WanderingMerchant[]
@@ -216,7 +217,7 @@ const Merchants: NextPage = (props) => {
       <Head>
         <title>Merchants - Lost Ark Timer</title>
       </Head>
-      <MerchantConfigModal />
+      <MerchantConfigModal open={configOpen} onOpenChange={setConfigOpen} />
       <div className="flex min-h-screen flex-col items-center whitespace-normal bg-base-300 py-2 dark:bg-base-100">
         <div className="ml-auto flex w-full justify-end px-4 lg:px-20">
           <div className="hidden w-1/5 whitespace-normal text-center text-sm uppercase sm:inline lg:text-lg">
@@ -228,12 +229,14 @@ const Merchants: NextPage = (props) => {
               }}
             />
           </div>
-          <label
-            htmlFor="merchant-config-modal"
+          <button
+            type="button"
+            aria-label="Open merchant settings"
             className="btn btn-ghost ml-2 mr-auto cursor-pointer"
+            onClick={() => setConfigOpen(true)}
           >
             <IconSettings className="transition ease-in-out hover:-translate-y-px hover:rotate-45" />
-          </label>
+          </button>
 
           <div className="mr-4 mb-2 w-40 flex-col">
             <select

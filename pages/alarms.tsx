@@ -158,6 +158,7 @@ const Alarms: NextPage = () => {
     false
   )
   const [unlockedAudio, setUnlockedAudio] = useState(false)
+  const [configOpen, setConfigOpen] = useState(false)
   const [moveDisabledEventsBottom, setMoveDisabledEventsBottom] =
     useLocalStorage<boolean>('moveDisabledEventsBottom', false)
   const [hideDisabledEvents, setHideDisableEvents] = useLocalStorage<boolean>(
@@ -507,12 +508,7 @@ const Alarms: NextPage = () => {
           content="width=device-width, initial-scale=0.35"
         ></meta>
       </Head>
-      <AlarmConfigModal
-      // view24HrTime={view24HrTime}
-      // setView24HrTime={setView24HrTime}
-      // viewLocalizedTime={viewLocalizedTime}
-      // setViewLocalizedTime={setViewLocalizedTime}
-      />
+      <AlarmConfigModal open={configOpen} onOpenChange={setConfigOpen} />
       <div className="navbar flex w-full flex-col bg-base-300 px-4 pt-4 dark:bg-base-100 sm:flex-row lg:px-20">
         <div className="navbar-start mr-4">
           <div className="flex items-center gap-2 ">
@@ -541,12 +537,14 @@ const Alarms: NextPage = () => {
             >
               {'>>'}
             </button>
-            <label
-              htmlFor="alarm-config-modal"
+            <button
+              type="button"
+              aria-label="Open alarm settings"
               className="btn btn-ghost cursor-pointer"
+              onClick={() => setConfigOpen(true)}
             >
               <IconSettings className="transition ease-in-out hover:-translate-y-px hover:rotate-45" />
-            </label>
+            </button>
           </div>
         </div>
         <div className="navbar-end w-full text-right">

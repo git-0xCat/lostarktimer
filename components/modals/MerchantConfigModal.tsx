@@ -2,7 +2,49 @@ import React from 'react'
 import useLocalStorage from '../../util/useLocalStorage'
 import { useTranslation } from 'react-i18next'
 
-const MerchantConfigModal = () => {
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+
+interface Props {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+const Row = ({
+  htmlFor,
+  label,
+  control,
+}: {
+  htmlFor: string
+  label: React.ReactNode
+  control: React.ReactNode
+}) => (
+  <div className="flex items-center justify-between gap-4 py-2">
+    <Label htmlFor={htmlFor} className="cursor-pointer text-sm">
+      {label}
+    </Label>
+    {control}
+  </div>
+)
+
+const defaultTheme = (): boolean =>
+  Boolean(
+    typeof window !== 'undefined' &&
+      (localStorage.getItem('darkMode') ||
+        (window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches))
+  )
+
+const MerchantConfigModal = ({ open, onOpenChange }: Props) => {
   const { t } = useTranslation('merchantConfig')
   const [viewLocalizedTime, setViewLocalizedTime] = useLocalStorage<boolean>(
     'viewLocalizedTime',
@@ -12,135 +54,96 @@ const MerchantConfigModal = () => {
     'view24HrTime',
     false
   )
-  const defaultTheme = (): boolean => {
-    return Boolean(localStorage.getItem('darkMode') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches))
-  }
-  const [darkMode, setDarkMode] = useLocalStorage<boolean>('darkMode', defaultTheme)
-  const [alertSound, setAlertSound] = useLocalStorage<string>(
-    'alertSound',
-    'muted'
+  const [darkMode, setDarkMode] = useLocalStorage<boolean>(
+    'darkMode',
+    defaultTheme
   )
-  const [hideGrandPrix, setHideGrandPrix] = useLocalStorage<boolean>(
-    'hideGrandPrix',
-    false
-  )
-  const [moveDisabledEventsBottom, setMoveDisabledEventsBottom] =
-    useLocalStorage<boolean>('moveDisabledEventsBottom', false)
-  const [hideDisabledEvents, setHideDisableEvents] = useLocalStorage<boolean>(
-    'hideDisabledEvents',
-    false
-  )
-
   const [hideMerchantItems, setHideMerchantItems] = useLocalStorage<boolean>(
     'hideMerchantItems',
     false
   )
-  const [hidePotentialSpawns, sethidePotentialSpawns] = useLocalStorage(
+  const [hidePotentialSpawns, sethidePotentialSpawns] = useLocalStorage<boolean>(
     'hidePotentialMerchantLocationSpawns',
     false
   )
-  const [disabledAlarms, setDisabledAlarms] = useLocalStorage<{
-    [key: string]: number
-  }>('disabledAlarms', {})
-  const [volume, setVolume] = useLocalStorage('volume', 0.4)
+
   return (
-    <>
-      <input
-        type="checkbox"
-        id="merchant-config-modal"
-        className="modal-toggle"
-      />
-      <div className="modal items-center overflow-x-hidden">
-        <div className="modal-box p-0">
-          <div className="w-full bg-base-200 p-2">
-            <h3 className="text-center text-lg font-bold uppercase">
-              {t('merchant-settings')}
-            </h3>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{t('merchant-settings')}</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-x-8 gap-y-2 md:grid-cols-2">
+          <div className="flex flex-col">
+            <Row
+              htmlFor="hideMerchantItems"
+              label={t('hide-merchant-items')}
+              control={
+                <Checkbox
+                  id="hideMerchantItems"
+                  checked={!!hideMerchantItems}
+                  onCheckedChange={(c) => setHideMerchantItems(c === true)}
+                />
+              }
+            />
+            <Row
+              htmlFor="hidePotentialSpawns"
+              label={t('hide-merchant-potential-spawns')}
+              control={
+                <Checkbox
+                  id="hidePotentialSpawns"
+                  checked={!!hidePotentialSpawns}
+                  onCheckedChange={(c) => sethidePotentialSpawns(c === true)}
+                />
+              }
+            />
           </div>
-          <div className="flex flex-row space-x-4 p-4">
-            <div className="w-full">
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('hide-merchant-items')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setHideMerchantItems((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={hideMerchantItems}
-                  className="checkbox checkbox-sm"
+
+          <div className="flex flex-col">
+            <Row
+              htmlFor="darkMode"
+              label={t('common:dark-mode')}
+              control={
+                <Checkbox
+                  id="darkMode"
+                  checked={!!darkMode}
+                  onCheckedChange={(c) => setDarkMode(c === true)}
                 />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('hide-merchant-potential-spawns')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    sethidePotentialSpawns(
-                      (e.target as HTMLInputElement).checked
-                    )
-                  }
-                  defaultChecked={hidePotentialSpawns}
-                  className="checkbox checkbox-sm"
+              }
+            />
+            <Row
+              htmlFor="view24Hr"
+              label={t('common:view-in-24-hr')}
+              control={
+                <Checkbox
+                  id="view24Hr"
+                  checked={!!view24HrTime}
+                  onCheckedChange={(c) => setView24HrTime(c === true)}
                 />
-              </label>
-            </div>
-            <div className="w-full">
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('common:dark-mode')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setDarkMode((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={darkMode}
-                  className="checkbox checkbox-sm"
+              }
+            />
+            <Row
+              htmlFor="viewLocalized"
+              label={t('common:view-in-current-time')}
+              control={
+                <Checkbox
+                  id="viewLocalized"
+                  checked={!!viewLocalizedTime}
+                  onCheckedChange={(c) => setViewLocalizedTime(c === true)}
                 />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('common:view-in-24-hr')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setView24HrTime((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={view24HrTime}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-              <label className="label mr-2 cursor-pointer">
-                <span className="label-text w-4/5 text-right font-semibold">
-                  {t('common:view-in-current-time')}
-                </span>
-                <input
-                  type="checkbox"
-                  onClick={(e) =>
-                    setViewLocalizedTime((e.target as HTMLInputElement).checked)
-                  }
-                  defaultChecked={viewLocalizedTime}
-                  className="checkbox checkbox-sm"
-                />
-              </label>
-            </div>
-          </div>
-          <div className="modal-action mb-5 justify-center">
-            <label
-              htmlFor="merchant-config-modal"
-              className="btn btn-block w-4/5"
-            >
-              {t('common:all-done')}!
-            </label>
+              }
+            />
           </div>
         </div>
-      </div>
-    </>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button className="w-full sm:w-auto">{t('common:all-done')}!</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

@@ -1,79 +1,112 @@
 import React from 'react'
 
-const ChangeLogModal = () => {
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+
+interface Props {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+const Entry = ({
+  date,
+  items,
+  ordered = true,
+}: {
+  date: string
+  items: string[]
+  ordered?: boolean
+}) => {
+  const List = ordered ? 'ol' : 'ul'
   return (
-    <>
-      <input type="checkbox" id="changelog-modal" className="modal-toggle" />
-      <label
-        htmlFor="changelog-modal"
-        className="modal w-full overflow-x-hidden"
-      >
-        <div className="modal-box w-full">
-          <h3 className="text-center text-lg font-bold uppercase">Changelog</h3>
-          <div className="text-violet-500">
-            Planned:
-            <ul className="list-disc pl-6">
-              <li>Wandering Merchant Ships</li>
-              <li>Daily Reset Timer</li>
-              <li>Procyon Compass Checkboxes</li>
-              <li>Discord Bot</li>
-            </ul>
-          </div>
-          <p className="py-4">4/7/2022:</p>
-          <ol className="list-disc pl-6">
-            <li>Added new merchant location images (thanks Gutterstyle)!</li>
-            <li>
-              Added ZH localization (thanks wuge). More translations welcome (:
-            </li>
-            <li>Added hide by group (thanks Dom).</li>
-            <li>Added back events that were finished (thanks Roland).</li>
-          </ol>
-          <p className="py-4">3/24/2022:</p>
-          <ol className="list-disc pl-6">
-            <li>Feature Release: Wandering Merchants!</li>
-            <li>Added actual alarm reminders, alerts and sounds.</li>
-            <li>Added hiding of events and customization of hidden events.</li>
-            <li>Moved settings into config modal.</li>
-          </ol>
+    <div className="space-y-1">
+      <p className="text-sm font-medium">{date}</p>
+      <List className="text-muted-foreground list-disc space-y-1 pl-6 text-sm">
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </List>
+    </div>
+  )
+}
 
-          <p className="py-4">3/19/2022:</p>
-          <ol className="list-disc pl-6">
-            <li>Fix: alarms should now work after correct user interaction.</li>
-            <li>Added actual alarm reminders, alerts and sounds.</li>
-            <li>Added hiding of events and customization of hidden events.</li>
-            <li>Moved settings into config modal.</li>
-          </ol>
+const ChangeLogModal = ({ open, onOpenChange }: Props) => {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Changelog</DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[60vh] pr-4">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-violet-500">Planned</p>
+              <ul className="text-muted-foreground list-disc space-y-1 pl-6 text-sm">
+                <li>Wandering Merchant Ships</li>
+                <li>Daily Reset Timer</li>
+                <li>Procyon Compass Checkboxes</li>
+                <li>Discord Bot</li>
+              </ul>
+            </div>
 
-          <p className="py-4">3/18/2022:</p>
-          <ol className="list-disc pl-6">
-            <li>Fixed timers from morning's patch.</li>
-          </ol>
-          <div>
-            <p className="py-4">3/17/2022:</p>
-            <ol className="list-disc pl-6">
-              <li>Fixed somewhat borked timers from last night's patch.</li>
-              <li>Gesbroy and Chaos Gates now displays accurate times.</li>
-              <li>
-                Events should now automatically update when day passes 12AM.
-              </li>
-              <li>
-                Added text to show when selected day was not same as current
-                day.
-              </li>
-            </ol>
+            <Entry
+              date="4/7/2022"
+              items={[
+                'Added new merchant location images (thanks Gutterstyle)!',
+                'Added ZH localization (thanks wuge). More translations welcome (:',
+                'Added hide by group (thanks Dom).',
+                'Added back events that were finished (thanks Roland).',
+              ]}
+            />
+            <Entry
+              date="3/24/2022"
+              items={[
+                'Feature Release: Wandering Merchants!',
+                'Added actual alarm reminders, alerts and sounds.',
+                'Added hiding of events and customization of hidden events.',
+                'Moved settings into config modal.',
+              ]}
+            />
+            <Entry
+              date="3/19/2022"
+              items={[
+                'Fix: alarms should now work after correct user interaction.',
+                'Added actual alarm reminders, alerts and sounds.',
+                'Added hiding of events and customization of hidden events.',
+                'Moved settings into config modal.',
+              ]}
+            />
+            <Entry
+              date="3/18/2022"
+              items={["Fixed timers from morning's patch."]}
+            />
+            <Entry
+              date="3/17/2022"
+              items={[
+                "Fixed somewhat borked timers from last night's patch.",
+                'Gesbroy and Chaos Gates now displays accurate times.',
+                'Events should now automatically update when day passes 12AM.',
+                'Added text to show when selected day was not same as current day.',
+              ]}
+            />
+            <Entry
+              date="3/16/2022"
+              items={[
+                'Added light mode colors.',
+                'Site is now more mobile friendly!',
+                'Added server timezone persistence.',
+              ]}
+            />
+            <p className="text-sm font-medium">3/15/2022: Release v1.0!</p>
           </div>
-          <div>
-            <p className="py-4">3/16/2022:</p>
-            <ol className="list-disc pl-6">
-              <li>Added light mode colors.</li>
-              <li>Site is now more mobile friendly!</li>
-              <li>Added server timezone persistence.</li>
-            </ol>
-          </div>
-          <p className="py-4">3/15/2022: Release v1.0!</p>
-        </div>
-      </label>
-    </>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   )
 }
 
