@@ -116,6 +116,10 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
       <div
         className={cn(
           'group bg-card flex flex-col gap-3 rounded-lg border p-4 shadow-sm transition',
+          // Mirror the amber ring the alarms page draws around events
+          // in the notify window: while a merchant's spawn window is
+          // open, surround the card with the same accent.
+          inProgress && 'ring-2 ring-amber-500/40',
           merchant.spawned &&
             'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800/50',
           !merchant.spawned && !inProgress && 'opacity-70'
