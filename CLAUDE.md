@@ -163,6 +163,9 @@ the schedule reference cards.
 
 ## See also
 
+- **`docs/NEXT_SESSION.md` — read this first.** Status snapshot,
+  what's blocking deploy, latent issues, and things deliberately not
+  done.
 - `docs/ARCHITECTURE.md` — runtime data flow diagram
 - `docs/DECISIONS.md` — log of why-we-chose-X for non-obvious calls
 - `docs/DEPLOY.md` — deploy + scraper-pipeline activation steps
