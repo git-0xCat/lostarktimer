@@ -15,7 +15,17 @@ import { RegionKey } from '../util/types/types'
 import { RegionTimeZoneMapping } from '../util/static'
 import { isWithinNotifyWindow } from '../util/alarmTrigger'
 import { useTranslation } from 'react-i18next'
-var classNames = require('classnames')
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type AlertSoundKeys =
   | 'Alert 1'
@@ -505,248 +515,216 @@ const Alarms: NextPage = () => {
         <title>Alarms - Lost Ark Timer</title>
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=0.35"
+          content="width=device-width, initial-scale=1.0"
         ></meta>
       </Head>
       <AlarmConfigModal open={configOpen} onOpenChange={setConfigOpen} />
-      <div className="navbar flex w-full flex-col bg-base-300 px-4 pt-4 dark:bg-base-100 sm:flex-row lg:px-20">
-        <div className="navbar-start mr-4">
-          <div className="flex items-center gap-2 ">
-            <button
-              className="btn border-none text-center text-xl text-stone-400 dark:bg-base-200"
-              onClick={(e) => setSelectedDate(selectedDate.minus({ days: 1 }))}
-            >
-              {'<<'}
-            </button>
-            <button
-              className="btn relative text-2xl text-stone-200"
-              onClick={(e) => setSelectedDate(serverTime)}
-            >
-              <span>
-                {selectedDate.monthLong} {selectedDate.day}
-              </span>
-              {serverTime.hasSame(selectedDate, 'day') ? null : (
-                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.6rem] font-normal opacity-70">
-                  ({selectedDate.toRelative()})
-                </span>
-              )}
-            </button>
-            <button
-              className="btn border-none text-center text-xl text-stone-400 dark:bg-base-200"
-              onClick={(e) => setSelectedDate(selectedDate.plus({ days: 1 }))}
-            >
-              {'>>'}
-            </button>
-            <button
-              type="button"
-              aria-label="Open alarm settings"
-              className="btn btn-ghost cursor-pointer"
-              onClick={() => setConfigOpen(true)}
-            >
-              <IconSettings className="transition ease-in-out hover:-translate-y-px hover:rotate-45" />
-            </button>
-          </div>
-        </div>
-        <div className="navbar-end w-full text-right">
-          <select
-            className="focus-visible: select mr-2 max-w-fit bg-base-200 outline-none"
-            onChange={(e) => {
-              let region = e.target.value as RegionKey
 
-              setRegionTZ(RegionTimeZoneMapping[region])
-              setRegionTZName(region)
-            }}
-            value={regionTZName}
-          >
-            {Object.entries(RegionTimeZoneMapping).map(([name, tz]) => (
-              <option key={name} value={name}>{`${name} (${tz})`}</option>
-            ))}
-          </select>
-          <table>
-            <tbody>
-              <tr>
-                <td></td>
-                <td
-                  className={classNames('text-left', {
-                    'text-green-700 dark:text-success': viewLocalizedTime,
-                  })}
-                >
-                  {t('common:current-time')}:
-                </td>
-                <td
-                  suppressHydrationWarning
-                  className={classNames({
-                    'text-green-700 dark:text-success': viewLocalizedTime,
-                  })}
-                >
-                  {mounted
-                    ? currDate.toLocaleString(
-                        view24HrTime
-                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                          : DateTime.TIME_WITH_SHORT_OFFSET
-                      )
-                    : ''}
-                </td>
-              </tr>
-
-              <tr>
-                <td></td>
-                <td
-                  className={classNames('text-left', {
-                    'text-green-700 dark:text-success': !viewLocalizedTime,
-                  })}
-                >
-                  {t('common:server-time')}:
-                </td>
-                <td
-                  suppressHydrationWarning
-                  className={classNames({
-                    'text-green-700 dark:text-success': !viewLocalizedTime,
-                  })}
-                >
-                  {mounted
-                    ? serverTime.toLocaleString(
-                        view24HrTime
-                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                          : DateTime.TIME_WITH_SHORT_OFFSET
-                      )
-                    : ''}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <br />
-        </div>
-      </div>
-
-      <div className=" flex min-h-screen flex-col items-center bg-base-300 py-2 dark:bg-base-100">
-        {alertSound !== 'muted' && !unlockedAudio && (
-          <div
-            className="alert alert-warning mb-4 w-fit justify-self-center shadow-lg duration-300 ease-out"
-            onClick={() => {
-              setUnlockedAudio(true)
-              let s = new Howl({
-                src: sounds[alertSound as AlertSoundKeys] as unknown as string,
-              })
-              s.play()
-            }}
-          >
-            <div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 flex-shrink-0 stroke-current"
-                fill="none"
-                viewBox="0 0 24 24"
+      <div className="bg-background min-h-screen pb-16">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Previous day"
+                onClick={() => setSelectedDate(selectedDate.minus({ days: 1 }))}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              <span>Click on me to start receiving alert sounds!</span>
+                <ChevronLeft />
+              </Button>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(serverTime)}
+                className="bg-card hover:bg-accent flex min-w-[160px] flex-col items-center rounded-md border px-4 py-2 transition-colors"
+              >
+                <span className="text-2xl leading-tight font-semibold">
+                  {selectedDate.monthLong} {selectedDate.day}
+                </span>
+                {!serverTime.hasSame(selectedDate, 'day') && (
+                  <span className="text-muted-foreground mt-0.5 text-[0.7rem] leading-tight">
+                    {selectedDate.toRelative()}
+                  </span>
+                )}
+              </button>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Next day"
+                onClick={() => setSelectedDate(selectedDate.plus({ days: 1 }))}
+              >
+                <ChevronRight />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open alarm settings"
+                onClick={() => setConfigOpen(true)}
+              >
+                <IconSettings className="transition hover:rotate-45" />
+              </Button>
+            </div>
+
+            <div className="flex flex-col items-start gap-2 lg:items-end">
+              <Select
+                value={regionTZName ?? 'US West'}
+                onValueChange={(v) => {
+                  const region = v as RegionKey
+                  setRegionTZ(RegionTimeZoneMapping[region])
+                  setRegionTZName(region)
+                }}
+              >
+                <SelectTrigger size="sm" className="min-w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(RegionTimeZoneMapping).map(([name, tz]) => (
+                    <SelectItem key={name} value={name}>
+                      {`${name} (${tz})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="text-muted-foreground flex flex-col gap-0.5 text-sm tabular-nums lg:items-end">
+                <div
+                  className={cn(
+                    'flex gap-2',
+                    viewLocalizedTime && 'text-foreground font-medium'
+                  )}
+                >
+                  <span>{t('common:current-time')}:</span>
+                  <span suppressHydrationWarning>
+                    {mounted
+                      ? currDate.toLocaleString(
+                          view24HrTime
+                            ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                            : DateTime.TIME_WITH_SHORT_OFFSET
+                        )
+                      : ''}
+                  </span>
+                </div>
+                <div
+                  className={cn(
+                    'flex gap-2',
+                    !viewLocalizedTime && 'text-foreground font-medium'
+                  )}
+                >
+                  <span>{t('common:server-time')}:</span>
+                  <span suppressHydrationWarning>
+                    {mounted
+                      ? serverTime.toLocaleString(
+                          view24HrTime
+                            ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                            : DateTime.TIME_WITH_SHORT_OFFSET
+                        )
+                      : ''}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-        <main className="mb-14 h-full w-full px-4 lg:px-20">
-          <table className="table w-full">
-            <thead>
-              <tr className="justify-center">
-                <td
-                  colSpan={2}
-                  className="relative bg-stone-400 text-center dark:bg-base-200"
-                >
-                  {selectedDate.hasSame(serverTime, 'day')
-                    ? 'Alarms'
-                    : `Viewing events ${selectedDate.toRelative()}`}
 
-                  {` (Alerts ${alertSound === 'muted' ? 'muted' : 'on'})`}
-                  <select
-                    className="select select-sm absolute right-6"
-                    onChange={(e) => {
-                      if (notifyInMins !== Number(e.target.value))
-                        setNotifyInMins(Number(e.target.value))
-                    }}
-                    value={notifyInMins}
-                  >
-                    <option value={5}>
-                      {t('common:option-minute-before', { minutes: 5 })}
-                    </option>
-                    <option value={10}>
-                      {t('common:option-minute-before', { minutes: 10 })}
-                    </option>
-                    <option value={15}>
-                      {t('common:option-minute-before', { minutes: 15 })}
-                    </option>
-                    <option value={20}>
-                      {t('common:option-minute-before', { minutes: 20 })}
-                    </option>
-                    <option value={30}>
-                      {t('common:option-minute-before', { minutes: 30 })}
-                    </option>
-                  </select>
-                </td>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border-0 bg-stone-400 dark:bg-base-200"></td>
-              </tr>
-              <tr className="flex">
-                <td className="w-1/4 min-w-fit bg-stone-400 dark:bg-base-200">
-                  <div className="flex flex-col">
-                    <button
-                      className="btn btn-active btn-wide relative w-full justify-start pl-16"
-                      onClick={(event) => {
-                        buttonClick(event, -1)
-                      }}
-                      ref={buttons[0]}
-                    >
-                      <span className="">All</span>
-                      <div className="absolute right-8">
-                        {eventsInSection(-1)}
-                      </div>
-                    </button>
-                    {eventTypeIconMapping.map((e: APIEventType) => (
-                      <button
-                        key={e.id}
-                        className="btn btn-wide relative w-full justify-start pl-16 pr-16"
-                        onClick={(event) => {
-                          buttonClick(event, e.id)
-                        }}
-                        ref={buttons[e.id + 1]}
-                      >
-                        <img
-                          src={`https://lostarkcodex.com/images/${e.iconUrl}`}
-                          className="absolute left-4"
-                          alt=""
-                        />
-                        {t(`categories.${e.name}`)}
-                        <div className="absolute right-8">
-                          {eventsInSection(e.id)}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </td>
-                <td className="top-0 w-full bg-stone-400 dark:bg-base-200">
-                  {currentEventsTable.length > 0 ? (
-                    <table key="currentEventsTable" className="table w-full ">
-                      <tbody className="block ring-2 ring-orange-300">
-                        {currentEventsTable}
-                      </tbody>
-                    </table>
-                  ) : null}
-                  <table key="fullEventsTable" className="table w-full">
-                    <tbody>{fullEventsTable}</tbody>
+          {alertSound !== 'muted' && !unlockedAudio && (
+            <button
+              type="button"
+              onClick={() => {
+                setUnlockedAudio(true)
+                new Howl({
+                  src: sounds[
+                    alertSound as AlertSoundKeys
+                  ] as unknown as string,
+                }).play()
+              }}
+              className="mt-6 w-full rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left text-sm text-amber-700 transition hover:bg-amber-500/15 dark:text-amber-300"
+            >
+              Click here to start receiving alert sounds.
+            </button>
+          )}
+
+          <div className="mt-6 flex items-center justify-between">
+            <h2 className="text-base font-medium">
+              {selectedDate.hasSame(serverTime, 'day')
+                ? 'Alarms'
+                : `Viewing events ${selectedDate.toRelative()}`}
+              <span className="text-muted-foreground ml-2 text-sm font-normal">
+                (Alerts {alertSound === 'muted' ? 'muted' : 'on'})
+              </span>
+            </h2>
+            <Select
+              value={String(notifyInMins ?? 15)}
+              onValueChange={(v) => setNotifyInMins(Number(v))}
+            >
+              <SelectTrigger size="sm" className="min-w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[5, 10, 15, 20, 30].map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    {t('common:option-minute-before', { minutes: m })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
+            <aside className="flex flex-col gap-1">
+              <button
+                ref={buttons[0]}
+                onClick={(event) => buttonClick(event, -1)}
+                className={cn(
+                  'group flex items-center justify-between rounded-md border px-3 py-2 text-sm font-medium transition',
+                  selectedEventType === -1
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'hover:bg-accent'
+                )}
+              >
+                <span>All</span>
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {eventsInSection(-1)}
+                </span>
+              </button>
+              {eventTypeIconMapping.map((e: APIEventType) => (
+                <button
+                  key={e.id}
+                  ref={buttons[e.id + 1]}
+                  onClick={(event) => buttonClick(event, e.id)}
+                  className={cn(
+                    'group flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm font-medium transition',
+                    selectedEventType === e.id
+                      ? 'bg-secondary text-secondary-foreground'
+                      : 'hover:bg-accent'
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <img
+                      src={`https://lostarkcodex.com/images/${e.iconUrl}`}
+                      alt=""
+                      className="size-5 shrink-0"
+                      loading="lazy"
+                    />
+                    {t(`categories.${e.name}`)}
+                  </span>
+                  <span className="text-muted-foreground text-xs tabular-nums">
+                    {eventsInSection(e.id)}
+                  </span>
+                </button>
+              ))}
+            </aside>
+
+            <main className="space-y-4">
+              {currentEventsTable.length > 0 ? (
+                <div className="rounded-md ring-2 ring-amber-500/40">
+                  <table className="w-full">
+                    <tbody>{currentEventsTable}</tbody>
                   </table>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </main>
+                </div>
+              ) : null}
+              <table className="w-full">
+                <tbody>{fullEventsTable}</tbody>
+              </table>
+            </main>
+          </div>
+        </div>
       </div>
     </>
   )

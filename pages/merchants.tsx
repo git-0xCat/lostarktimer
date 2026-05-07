@@ -14,6 +14,17 @@ import { MerchantAPIData, RegionKey, ServerKey } from '../util/types/types'
 import { RegionTimeZoneMapping } from '../util/static'
 import { IconSettings } from '@tabler/icons-react'
 import MerchantConfigModal from '../components/modals/MerchantConfigModal'
+import { useTranslation } from 'react-i18next'
+
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface Merchant {
   location: string
@@ -218,99 +229,113 @@ const Merchants: NextPage = (props) => {
         <title>Merchants - Lost Ark Timer</title>
       </Head>
       <MerchantConfigModal open={configOpen} onOpenChange={setConfigOpen} />
-      <div className="flex min-h-screen flex-col items-center whitespace-normal bg-base-300 py-2 dark:bg-base-100">
-        <div className="ml-auto flex w-full justify-end px-4 lg:px-20">
-          <div className="hidden w-1/5 whitespace-normal text-center text-sm uppercase sm:inline lg:text-lg">
-            <span
-              dangerouslySetInnerHTML={{
-                __html: t('server-note-text', {
-                  timeType: viewLocalizedTime ? 'CURRENT TIME' : 'SERVER TIME',
-                }),
-              }}
-            />
-          </div>
-          <button
-            type="button"
-            aria-label="Open merchant settings"
-            className="btn btn-ghost ml-2 mr-auto cursor-pointer"
-            onClick={() => setConfigOpen(true)}
-          >
-            <IconSettings className="transition ease-in-out hover:-translate-y-px hover:rotate-45" />
-          </button>
 
-          <div className="mr-4 mb-2 w-40 flex-col">
-            <select
-              className="select select-bordered select-sm w-full"
-              onChange={(e) => {
-                let region = e.target.value as RegionKey
-                setRegionTZName(region)
-                setRegionTZ(RegionTimeZoneMapping[region])
-              }}
-              value={regionTZName}
-            >
-              {Object.keys(regions).map((reg) => {
-                let region = reg.replace('-', ' ')
-                return (
-                  <option key={region} value={region}>
-                    {region}
-                  </option>
-                )
-              })}
-            </select>
-            {regionTZName && (
-              <select
-                className="select select-bordered select-sm w-full"
-                onChange={(e) => setSelectedServer(e.target.value as ServerKey)}
-                value={selectedServer}
+      <div className="bg-background min-h-screen pb-16">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Wandering Merchants
+              </h1>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open merchant settings"
+                onClick={() => setConfigOpen(true)}
               >
-                {regions[regionTZName as RegionKey].map((server) => (
-                  <option key={server} value={server}>
-                    {server}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <table className="mb-2">
-            <tbody>
-              <tr
-                className={classNames('text-left', {
-                  'text-green-700 dark:text-success': viewLocalizedTime,
-                })}
-              >
-                <td>{t('common:current-time')}:</td>
-                <td className="text-right" suppressHydrationWarning>
-                  {isMounted.current
-                    ? currDate.toLocaleString(
-                        view24HrTime
-                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                          : DateTime.TIME_WITH_SHORT_OFFSET
-                      )
-                    : ''}
-                </td>
-              </tr>
+                <IconSettings className="transition hover:rotate-45" />
+              </Button>
+            </div>
 
-              <tr
-                className={classNames('text-left', {
-                  'text-green-700 dark:text-success': !viewLocalizedTime,
-                })}
-              >
-                <td>{t('common:server-time')}:</td>
-                <td suppressHydrationWarning>
-                  {isMounted.current
-                    ? serverTime.toLocaleString(
-                        view24HrTime
-                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                          : DateTime.TIME_WITH_SHORT_OFFSET
-                      )
-                    : ''}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            <div className="flex flex-col items-start gap-2 lg:items-end">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Select
+                  value={regionTZName ?? 'US West'}
+                  onValueChange={(v) => {
+                    const region = v as RegionKey
+                    setRegionTZName(region)
+                    setRegionTZ(RegionTimeZoneMapping[region])
+                  }}
+                >
+                  <SelectTrigger size="sm" className="min-w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(regions).map((reg) => (
+                      <SelectItem key={reg} value={reg.replace('-', ' ')}>
+                        {reg.replace('-', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {regionTZName && (
+                  <Select
+                    value={selectedServer ?? ''}
+                    onValueChange={(v) => setSelectedServer(v as ServerKey)}
+                  >
+                    <SelectTrigger size="sm" className="min-w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regions[regionTZName as RegionKey].map((server) => (
+                        <SelectItem key={server} value={server}>
+                          {server}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="text-muted-foreground flex flex-col gap-0.5 text-sm tabular-nums lg:items-end">
+                <div
+                  className={cn(
+                    'flex gap-2',
+                    viewLocalizedTime && 'text-foreground font-medium'
+                  )}
+                >
+                  <span>{t('common:current-time')}:</span>
+                  <span suppressHydrationWarning>
+                    {isMounted.current
+                      ? currDate.toLocaleString(
+                          view24HrTime
+                            ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                            : DateTime.TIME_WITH_SHORT_OFFSET
+                        )
+                      : ''}
+                  </span>
+                </div>
+                <div
+                  className={cn(
+                    'flex gap-2',
+                    !viewLocalizedTime && 'text-foreground font-medium'
+                  )}
+                >
+                  <span>{t('common:server-time')}:</span>
+                  <span suppressHydrationWarning>
+                    {isMounted.current
+                      ? serverTime.toLocaleString(
+                          view24HrTime
+                            ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                            : DateTime.TIME_WITH_SHORT_OFFSET
+                        )
+                      : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p
+            className="text-muted-foreground mt-4 hidden text-sm sm:block"
+            dangerouslySetInnerHTML={{
+              __html: t('server-note-text', {
+                timeType: viewLocalizedTime ? 'CURRENT TIME' : 'SERVER TIME',
+              }),
+            }}
+          />
         </div>
 
-        <div className="mb-14 flex w-screen overflow-x-auto px-4 lg:px-20">
+        <div className="mx-auto flex w-full max-w-7xl overflow-x-auto px-4 lg:px-8">
           <table className="table w-full">
             <thead>
               <tr className="relative justify-center text-center">
@@ -498,8 +523,5 @@ const Merchants: NextPage = (props) => {
     </>
   )
 }
-
-import { useTranslation } from 'react-i18next'
-import classNames from 'classnames'
 
 export default Merchants

@@ -1,108 +1,112 @@
-import classNames from 'classnames'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'react-i18next'
-import { IconLanguage } from '@tabler/icons-react'
-const NavBar = () => {
-  const { t } = useTranslation('common')
+import { Languages } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const NavBar = () => {
+  const { t, i18n } = useTranslation('common')
   const router = useRouter()
+
+  const isAlarms = router.pathname === '/alarms' || router.pathname === '/'
+  const isMerchants = router.pathname === '/merchants'
+
   return (
     <>
-      <div className="relative bg-sky-800 py-2 text-center lg:px-4">
-        <div
-          className="flex items-center bg-sky-900/50 p-2 leading-none text-sky-100 lg:inline-flex lg:rounded-full"
-          role="alert"
+      <div className="bg-sky-700 text-sky-50 py-2 text-center text-sm">
+        <a
+          href="https://discord.gg/qhnqxtphSg"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium underline-offset-4 hover:underline"
         >
-          <span className="sm:text-md mx-4 flex-auto text-center text-sm font-semibold">
-            <label
-              className="cursor-pointer text-teal-300"
-              // htmlFor="changelog-modal"
-            >
-              <a
-                href="https://discord.gg/qhnqxtphSg"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Discord Bot now available. Click here to join!
-              </a>
-            </label>
-          </span>
-        </div>
+          Discord Bot now available — click here to join!
+        </a>
       </div>
-      <div className="navbar w-full bg-base-300 px-4 py-4 dark:bg-base-300 lg:px-20">
-        <div className="navbar-start text-lg font-semibold uppercase">
-          <div className="tabs">
-            <span
-              className={classNames('tab', 'hover:text-sky-600', {
-                'tab-active': router.pathname == '/alarms',
-              })}
-            >
-              <Link href="/alarms">
-                <span>{t('alarm-link-text')}</span>
-              </Link>
-            </span>
 
-            <span
-              className={classNames('tab', 'hover:text-sky-600', {
-                'tab-active': router.pathname == '/merchants',
-              })}
-            >
-              <Link href="/merchants">
-                <span>{t('merchant-link-text')}</span>
+      <header className="border-b bg-background">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="flex items-center gap-6">
+            <Link href="/alarms" className="text-lg font-semibold tracking-tight">
+              Lost Ark Timer
+            </Link>
+            <nav className="flex items-center gap-1">
+              <Link
+                href="/alarms"
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  isAlarms
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {t('alarm-link-text')}
               </Link>
-            </span>
+              <Link
+                href="/merchants"
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  isMerchants
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {t('merchant-link-text')}
+              </Link>
+            </nav>
           </div>
-        </div>
-        <div className="navbar-center hidden flex-col sm:flex">
-          <a className="btn btn-ghost text-xl normal-case">Lost Ark Timer</a>
 
-          <div className="font-mono text-sm uppercase">
+          <div className="flex items-center gap-4 text-sm">
             <a
-              className="text-teal-600 hover:text-teal-400"
+              className="text-muted-foreground hover:text-foreground"
               href="https://discord.gg/beFb23WgNC"
               target="_blank"
               rel="noopener noreferrer"
             >
               Discord
             </a>
-            <span className="mx-4"></span>
             <a
-              className="text-teal-600 hover:text-teal-400"
+              className="text-muted-foreground hover:text-foreground"
               href="https://github.com/cwjoshuak/lostarktimer.app-web"
               target="_blank"
               rel="noopener noreferrer"
             >
               GitHub
             </a>
-            <span className="mx-4"></span>
             <a
-              className="text-teal-600 hover:text-teal-400"
+              className="text-muted-foreground hover:text-foreground"
               href="https://www.buymeacoffee.com/lostarktimer"
               target="_blank"
               rel="noopener noreferrer"
             >
               Support
             </a>
+            <div className="flex items-center gap-2">
+              <Languages className="text-muted-foreground size-4" />
+              <Select
+                value={i18n.language || 'en'}
+                onValueChange={(v) => i18n.changeLanguage(v)}
+              >
+                <SelectTrigger size="sm" className="w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">EN</SelectItem>
+                  <SelectItem value="zh">ZH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
-        <div className="navbar-end text-right text-lg font-semibold uppercase">
-          <IconLanguage />
-          <select
-            defaultValue={router.locale ?? 'en'}
-            className="select select-sm ml-2"
-            onChange={(e) => {
-              const { pathname, asPath, query } = router
-              router.replace({ pathname, query }, asPath, {
-                locale: e.target.value,
-              })
-            }}
-          >
-            <option value="en">EN</option>
-            <option value="zh">ZH</option>
-          </select>
-        </div>
-      </div>
+      </header>
     </>
   )
 }
