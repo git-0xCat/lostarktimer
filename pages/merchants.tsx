@@ -225,7 +225,7 @@ const Merchants: NextPage = (props) => {
       <MerchantConfigModal open={configOpen} onOpenChange={setConfigOpen} />
 
       <div className="bg-background min-h-screen pb-16">
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1800px] px-4 py-6 lg:px-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">
@@ -235,9 +235,10 @@ const Merchants: NextPage = (props) => {
                 variant="ghost"
                 size="icon"
                 aria-label="Open merchant settings"
+                className="size-11"
                 onClick={() => setConfigOpen(true)}
               >
-                <IconSettings className="transition hover:rotate-45" />
+                <IconSettings className="size-5 transition hover:rotate-45" />
               </Button>
             </div>
 
@@ -329,7 +330,7 @@ const Merchants: NextPage = (props) => {
           />
         </div>
 
-        <div className="mx-auto w-full max-w-7xl px-4 lg:px-8">
+        <div className="mx-auto w-full max-w-[1800px] px-4 lg:px-6">
           <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
             <a
               href="https://saint-bot.webflow.io/"

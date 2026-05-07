@@ -66,12 +66,12 @@ export const createTableData = (
       children.push(
         <td
           key={uuidv4()}
-          className="invisible basis-1/2 p-2"
+          className="hidden basis-1/2 p-2 md:invisible md:block"
         ></td>
       )
     }
     arr.push(
-      <tr key={i} className="flex flex-row">
+      <tr key={i} className="flex flex-col md:flex-row">
         {children}
       </tr>
     )

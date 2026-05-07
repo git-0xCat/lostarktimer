@@ -39,22 +39,20 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
     false
   )
 
-  const millisUntilLatest = (against: DateTime): number => {
+  const millisUntilLatest = (against: DateTime): number | null => {
     const next = gameEvent.latest(serverTime)
-    if (!next || !next.start) return 0
+    if (!next || !next.start) return null
     return next.start.diff(against).toMillis()
   }
-  const [timeUntil, setTimeUntil] = useState(
-    Duration.fromMillis(millisUntilLatest(serverTime))
+  const initialMs = millisUntilLatest(serverTime)
+  const [timeUntil, setTimeUntil] = useState<Duration | null>(
+    initialMs === null ? null : Duration.fromMillis(initialMs)
   )
   useEffect(() => {
     if (gameEvent.disabled) return
     const timer = setInterval(() => {
-      setTimeUntil(
-        Duration.fromMillis(
-          millisUntilLatest(DateTime.now().setZone(serverTime.zone))
-        )
-      )
+      const ms = millisUntilLatest(DateTime.now().setZone(serverTime.zone))
+      setTimeUntil(ms === null ? null : Duration.fromMillis(ms))
     }, 1000)
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -114,12 +112,16 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
   const isGrouped = isRepeatedEvent && hideGrandPrix
   const isDisabled = !!gameEvent.disabled
 
+  const translated = t(`${gameEvent.gameEvent.id}`)
+  const fallbackName = gameEvent.gameEvent.name
   const eventLabel = isGrouped
     ? gameEvent.groupName
-    : t(`${gameEvent.gameEvent.id}`)
+    : translated === gameEvent.gameEvent.id
+      ? fallbackName
+      : translated
 
   return (
-    <td className="basis-1/2 p-2 align-top">
+    <td className="basis-full p-2 align-top md:basis-1/2">
       <div
         className={cn(
           'bg-card group relative flex items-start gap-3 rounded-lg border p-3 shadow-sm transition',
@@ -146,7 +148,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
               )}
               {eventLabel}
             </p>
-            {!isDisabled && (
+            {!isDisabled && timeUntil && (
               <span className="text-amber-500 dark:text-amber-300 shrink-0 font-mono text-xs tabular-nums">
                 -{timeUntil.toFormat('hh:mm:ss')}
               </span>

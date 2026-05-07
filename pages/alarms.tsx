@@ -505,27 +505,28 @@ const Alarms: NextPage = () => {
       <AlarmConfigModal open={configOpen} onOpenChange={setConfigOpen} />
 
       <div className="bg-background min-h-screen pb-16">
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1800px] px-4 py-6 lg:px-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="icon"
                 aria-label="Previous day"
+                className="size-11"
                 onClick={() => setSelectedDate(selectedDate.minus({ days: 1 }))}
               >
-                <ChevronLeft />
+                <ChevronLeft className="size-5" />
               </Button>
               <button
                 type="button"
                 onClick={() => setSelectedDate(serverTime)}
-                className="bg-card hover:bg-accent flex min-w-[160px] flex-col items-center rounded-md border px-4 py-2 transition-colors"
+                className="bg-card hover:bg-accent flex h-11 min-w-[170px] flex-col items-center justify-center rounded-md border px-4 transition-colors"
               >
-                <span className="text-2xl leading-tight font-semibold">
+                <span className="text-xl leading-tight font-semibold">
                   {selectedDate.monthLong} {selectedDate.day}
                 </span>
                 {!serverTime.hasSame(selectedDate, 'day') && (
-                  <span className="text-muted-foreground mt-0.5 text-[0.7rem] leading-tight">
+                  <span className="text-muted-foreground -mb-1 mt-0.5 text-[0.65rem] leading-tight">
                     {selectedDate.toRelative()}
                   </span>
                 )}
@@ -534,17 +535,19 @@ const Alarms: NextPage = () => {
                 variant="outline"
                 size="icon"
                 aria-label="Next day"
+                className="size-11"
                 onClick={() => setSelectedDate(selectedDate.plus({ days: 1 }))}
               >
-                <ChevronRight />
+                <ChevronRight className="size-5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Open alarm settings"
+                className="size-11"
                 onClick={() => setConfigOpen(true)}
               >
-                <IconSettings className="transition hover:rotate-45" />
+                <IconSettings className="size-5 transition hover:rotate-45" />
               </Button>
             </div>
 
@@ -650,8 +653,8 @@ const Alarms: NextPage = () => {
             </Select>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
-            <aside className="flex flex-col gap-1">
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
+            <aside className="flex flex-row flex-wrap gap-1 lg:flex-col">
               <button
                 ref={buttons[0]}
                 onClick={(event) => buttonClick(event, -1)}

@@ -33,7 +33,7 @@ const NavBar = () => {
       </div>
 
       <header className="border-b bg-background">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+        <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
           <div className="flex items-center gap-6">
             <Link href="/alarms" className="text-lg font-semibold tracking-tight">
               Lost Ark Timer

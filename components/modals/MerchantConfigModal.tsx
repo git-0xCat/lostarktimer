@@ -28,12 +28,13 @@ const Row = ({
   label: React.ReactNode
   control: React.ReactNode
 }) => (
-  <div className="flex items-center justify-between gap-4 py-2">
-    <Label htmlFor={htmlFor} className="cursor-pointer text-sm">
-      {label}
-    </Label>
+  <Label
+    htmlFor={htmlFor}
+    className="hover:bg-accent/50 -mx-2 flex cursor-pointer items-center justify-between gap-4 rounded-md px-2 py-2 text-sm font-normal transition-colors"
+  >
+    <span>{label}</span>
     {control}
-  </div>
+  </Label>
 )
 
 const defaultTheme = (): boolean =>

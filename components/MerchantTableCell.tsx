@@ -112,7 +112,7 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
     .toLocaleString(view24HrTime ? DateTime.TIME_24_SIMPLE : DateTime.TIME_SIMPLE)
 
   return (
-    <td className="basis-1/2 p-2 align-top">
+    <td className="basis-full p-2 align-top md:basis-1/2">
       <div
         className={cn(
           'group bg-card flex flex-col gap-3 rounded-lg border p-4 shadow-sm transition',

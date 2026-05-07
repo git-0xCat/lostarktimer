@@ -58,15 +58,18 @@ const Row = ({
   hint?: React.ReactNode
   control: React.ReactNode
 }) => (
-  <div className="flex items-center justify-between gap-4 py-2">
-    <Label htmlFor={htmlFor} className="cursor-pointer text-sm">
+  <Label
+    htmlFor={htmlFor}
+    className="hover:bg-accent/50 -mx-2 flex cursor-pointer items-center justify-between gap-4 rounded-md px-2 py-2 text-sm font-normal transition-colors"
+  >
+    <span className="flex items-center gap-1">
       {label}
       {hint ? (
-        <span className="text-muted-foreground ml-1 text-xs">{hint}</span>
+        <span className="text-muted-foreground text-xs">{hint}</span>
       ) : null}
-    </Label>
+    </span>
     {control}
-  </div>
+  </Label>
 )
 
 const defaultTheme = (): boolean =>
