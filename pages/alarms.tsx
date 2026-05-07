@@ -305,17 +305,7 @@ const Alarms: NextPage = () => {
             },
             { zone: regionTZ }
           )
-          const id = Number(gt.id)
-          if (
-            (7000 <= id && id < 8000 && ![7013, 7035].includes(id)) ||
-            [
-              1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
-              5002, 5003, 5004, 5005, 6007, 6008, 6009, 6010, 6011,
-            ].includes(id)
-          ) {
-            start = start.plus({ minutes: 10 })
-          }
-          const end = DateTime.fromObject(
+          let end = DateTime.fromObject(
             {
               year: start.year,
               month: start.month,
@@ -325,10 +315,26 @@ const Alarms: NextPage = () => {
             },
             { zone: regionTZ }
           )
+          // Some types/events run ten minutes after their source-listed
+          // hour. Apply the offset to BOTH start and end so degenerate
+          // ranges (e.g. "02:00-02:00" canonicalised from a single-time
+          // entry) stay as a point in time rather than getting blown
+          // out into a 23h50m "spanning midnight" window.
+          const id = Number(gt.id)
+          if (
+            (7000 <= id && id < 8000 && ![7013, 7035].includes(id)) ||
+            [
+              1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
+              5002, 5003, 5004, 5005, 6007, 6008, 6009, 6010, 6011,
+            ].includes(id)
+          ) {
+            start = start.plus({ minutes: 10 })
+            end = end.plus({ minutes: 10 })
+          }
           if (!start.isValid || !end.isValid) return
-          // If the source emits "23:00-01:00" the end ends up before
-          // start (same calendar day). Roll end forward a day so the
-          // resulting Interval is valid.
+          // Defensive: a real "23:00-01:00" window from the source
+          // would still need rolling forward. Single-time entries are
+          // already covered above.
           const adjustedEnd = end < start ? end.plus({ days: 1 }) : end
           const interval = Interval.fromDateTimes(start, adjustedEnd)
           if (!interval.isValid) return
