@@ -9,7 +9,6 @@ import regions from '../data/regions.json'
 import merchantsData from '../data/merchants.json'
 import { createTableData } from '../util/createTableData'
 import WanderingMerchant from '../common/WanderingMerchant'
-import io, { Socket } from 'socket.io-client'
 import { MerchantAPIData, RegionKey, ServerKey } from '../util/types/types'
 import { RegionTimeZoneMapping } from '../util/static'
 import { IconSettings } from '@tabler/icons-react'
@@ -85,10 +84,11 @@ const Merchants: NextPage = (props) => {
   useEffect(() => {
     if (regionTZ) setServerTime(DateTime.now().setZone(regionTZ))
   }, [regionTZName, regionTZ])
-  const [merchantAPIData, setMerchantAPIData] = useState<{
-    [key: string]: MerchantAPIData
-  }>({})
-  const [socket, setSocket] = useState<Socket | null>(null)
+  // The live merchant websocket (wss://ws.lostarktimer.app) is parked
+  // pending the crowdsourced-vote rebuild — see the WIP banner above.
+  // Keep the API-data plumbing intact so reactivating it later is just
+  // restoring the socket effect.
+  const [merchantAPIData] = useState<{ [key: string]: MerchantAPIData }>({})
   const [merchantTableData, setMerchantTableData] = useState<
     Array<React.JSX.Element>
   >([])
@@ -97,29 +97,7 @@ const Merchants: NextPage = (props) => {
   const [wanderingMerchants, setWanderingMerchants] = useState<
     WanderingMerchant[]
   >([])
-  const [apiData, setAPIData] = useState<{ [key: string]: MerchantAPIData }>({})
-  const [dataLastRefreshed, setDataLastRefreshed] = useState(currDate)
-  useEffect(() => {
-    const newSocket = io(`wss://ws.lostarktimer.app`)
-
-    if (process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production') {
-      newSocket.disconnect()
-    }
-
-    newSocket.on('merchants', (data) => {
-      setAPIData(data)
-    })
-
-    setSocket(newSocket)
-    return () => {
-      newSocket.close()
-    }
-  }, [])
-
-  useEffect(() => {
-    setMerchantAPIData({ ...merchantAPIData, ...apiData })
-    setDataLastRefreshed(DateTime.now())
-  }, [apiData])
+  const [dataLastRefreshed] = useState(currDate)
 
   useEffect(() => {
     if (regionTZName) {
@@ -159,15 +137,6 @@ const Merchants: NextPage = (props) => {
       )
     }
   }, [regionTZName])
-  useEffect(() => {
-    if (socket?.connected && selectedServer) {
-      socket.removeAllListeners()
-      socket.emit('join', `${selectedServer.toLowerCase()}`)
-      socket.on('merchants', (data) => {
-        setAPIData(data)
-      })
-    }
-  }, [socket?.connected, selectedServer])
   useEffect(() => {
     let data = Object.values(merchantAPIData).filter(
       (m) => m.server === selectedServer?.toLowerCase()
@@ -214,9 +183,6 @@ const Merchants: NextPage = (props) => {
     merchantAPIData,
     mSchedules,
   ])
-  useEffect(() => {
-    if (currDate.minute < 30 || currDate.minute >= 55) setMerchantAPIData({})
-  }, [currDate.minute])
   return (
     <>
       <Head>
