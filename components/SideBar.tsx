@@ -4,7 +4,7 @@ import {
   IconBrandPaypal,
   IconCoffee,
   IconFileCode,
-} from '@tabler/icons'
+} from '@tabler/icons-react'
 
 const SideBar = () => {
   return (

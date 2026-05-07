@@ -3,8 +3,8 @@ import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
 import { ChangeLogModal, GitHubModal, SideBar } from '../components'
-import { appWithTranslation } from 'next-i18next'
-import { IconBrandTwitch } from '@tabler/icons'
+import '../util/i18n'
+import { IconBrandTwitch } from '@tabler/icons-react'
 import { SWRConfig } from 'swr'
 import NavBar from '../components/NavBar'
 
@@ -99,4 +99,4 @@ function MyApp({ Component, pageProps, ...AppProps }: AppProps) {
     </>
   )
 }
-export default appWithTranslation(MyApp)
+export default MyApp

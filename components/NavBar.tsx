@@ -1,8 +1,8 @@
 import classNames from 'classnames'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useTranslation } from 'next-i18next'
-import { IconLanguage } from '@tabler/icons'
+import { useTranslation } from 'react-i18next'
+import { IconLanguage } from '@tabler/icons-react'
 const NavBar = () => {
   const { t } = useTranslation('common')
 

@@ -17,7 +17,9 @@ class GameEvent {
     this.times.push(t)
   }
   latest(t: DateTime): Interval {
-    return this.times.filter((ti) => ti.start.diff(t).valueOf() > 0)[0]
+    return this.times.filter(
+      (ti) => ti.start !== null && ti.start.diff(t).valueOf() > 0
+    )[0]
   }
 }
 

@@ -1,9 +1,9 @@
 import React from 'react'
 import { Howl, Howler } from 'howler'
 import { alert1, alert2, alert3, alert4, alert5, alert6 } from '../../sounds'
-import useLocalStorage from '@olerichter00/use-localstorage'
-import { IconVolume2, IconVolume3 } from '@tabler/icons'
-import { useTranslation } from 'next-i18next'
+import useLocalStorage from '../../util/useLocalStorage'
+import { IconVolume2, IconVolume3 } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 
 const sounds = {
   'Alert 1': alert1,
@@ -33,8 +33,8 @@ const AlarmConfigModal = () => {
     'view24HrTime',
     false
   )
-  const defaultTheme = () => {
-    return (localStorage.getItem('darkMode') || window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const defaultTheme = (): boolean => {
+    return Boolean(localStorage.getItem('darkMode') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches))
   }
   const [darkMode, setDarkMode] = useLocalStorage<boolean>('darkMode', defaultTheme)
   const [alertSound, setAlertSound] = useLocalStorage<string>(

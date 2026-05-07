@@ -1,6 +1,6 @@
 import React from 'react'
-import useLocalStorage from '@olerichter00/use-localstorage'
-import { useTranslation } from 'next-i18next'
+import useLocalStorage from '../../util/useLocalStorage'
+import { useTranslation } from 'react-i18next'
 
 const MerchantConfigModal = () => {
   const { t } = useTranslation('merchantConfig')
@@ -12,8 +12,8 @@ const MerchantConfigModal = () => {
     'view24HrTime',
     false
   )
-  const defaultTheme = () => {
-    return (localStorage.getItem('darkMode') || window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const defaultTheme = (): boolean => {
+    return Boolean(localStorage.getItem('darkMode') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches))
   }
   const [darkMode, setDarkMode] = useLocalStorage<boolean>('darkMode', defaultTheme)
   const [alertSound, setAlertSound] = useLocalStorage<string>(

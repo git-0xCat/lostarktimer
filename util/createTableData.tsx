@@ -3,7 +3,7 @@ import { GameEvent } from '../common'
 import { GameEventTableCell } from '../components'
 import { v4 as uuidv4 } from 'uuid'
 import { DateTime, Interval, Zone } from 'luxon'
-import useLocalStorage from '@olerichter00/use-localstorage'
+import useLocalStorage from './useLocalStorage'
 import { MerchantData } from './types/types'
 import MerchantTableCell from '../components/MerchantTableCell'
 import classNames from 'classnames'
@@ -91,16 +91,16 @@ export const generateTimestampStrings = (
 ) => {
   let eventTimes =
     (event as WanderingMerchant).schedule || (event as GameEvent).times
-  let diff = interval.start.diff(serverTime).valueOf()
+  let diff = interval.start!.diff(serverTime).valueOf()
   let inProgress =
-    interval.start.diff(serverTime).toMillis() < 0 &&
-    interval.end.diff(serverTime).toMillis() > 0
-  let startTime = interval.start
+    interval.start!.diff(serverTime).toMillis() < 0 &&
+    interval.end!.diff(serverTime).toMillis() > 0
+  let startTime = interval.start!
     .setZone(localizedTZ)
     .toLocaleString(
       view24HrTime ? DateTime.TIME_24_SIMPLE : DateTime.TIME_SIMPLE
     )
-  let endTime = interval.end
+  let endTime = interval.end!
     .setZone(localizedTZ)
     .toLocaleString(
       view24HrTime ? DateTime.TIME_24_SIMPLE : DateTime.TIME_SIMPLE

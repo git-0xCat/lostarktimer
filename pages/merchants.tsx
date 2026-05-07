@@ -2,18 +2,17 @@ import type { NextPage } from 'next'
 import Head from 'next/head'
 import React, { useState, useRef, useEffect } from 'react'
 import merchantSchedules from '../data/merchantSchedules.json'
-import saintbotImage from '../public/images/saint-bot.png'
+const saintbotImage = '/images/saint-bot.png'
 import { DateTime, Interval } from 'luxon'
-import useLocalStorage from '@olerichter00/use-localstorage'
+import useLocalStorage from '../util/useLocalStorage'
 import regions from '../data/regions.json'
 import merchantsData from '../data/merchants.json'
 import { createTableData } from '../util/createTableData'
 import WanderingMerchant from '../common/WanderingMerchant'
 import io, { Socket } from 'socket.io-client'
 import { MerchantAPIData, RegionKey, ServerKey } from '../util/types/types'
-import Image from 'next/image'
 import { RegionTimeZoneMapping } from '../util/static'
-import { IconSettings } from '@tabler/icons'
+import { IconSettings } from '@tabler/icons-react'
 import { MerchantConfigModal } from '../components'
 
 interface Merchant {
@@ -33,9 +32,9 @@ const Merchants: NextPage = (props) => {
     'Shandi'
   )
   const isMounted = useRef(false);
-  const defaultTheme = () => {
+  const defaultTheme = (): boolean => {
     // Defaults to system theme if unconfigured
-    return (localStorage.getItem('darkMode') || window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    return Boolean(localStorage.getItem('darkMode') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches))
   }
   const [darkMode, setDarkMode] = useLocalStorage<boolean>('darkMode', defaultTheme)
   useEffect(()=> {
@@ -86,7 +85,7 @@ const Merchants: NextPage = (props) => {
   }>({})
   const [socket, setSocket] = useState<Socket | null>(null)
   const [merchantTableData, setMerchantTableData] = useState<
-    Array<JSX.Element>
+    Array<React.JSX.Element>
   >([])
 
   const [wanderingMerchants, setWanderingMerchants] = useState<
@@ -277,12 +276,14 @@ const Merchants: NextPage = (props) => {
                 })}
               >
                 <td>{t('common:current-time')}:</td>
-                <td className="text-right">
-                  {currDate.toLocaleString(
-                    view24HrTime
-                      ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                      : DateTime.TIME_WITH_SHORT_OFFSET
-                  )}
+                <td className="text-right" suppressHydrationWarning>
+                  {isMounted.current
+                    ? currDate.toLocaleString(
+                        view24HrTime
+                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                          : DateTime.TIME_WITH_SHORT_OFFSET
+                      )
+                    : ''}
                 </td>
               </tr>
 
@@ -292,12 +293,14 @@ const Merchants: NextPage = (props) => {
                 })}
               >
                 <td>{t('common:server-time')}:</td>
-                <td>
-                  {serverTime.toLocaleString(
-                    view24HrTime
-                      ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                      : DateTime.TIME_WITH_SHORT_OFFSET
-                  )}
+                <td suppressHydrationWarning>
+                  {isMounted.current
+                    ? serverTime.toLocaleString(
+                        view24HrTime
+                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                          : DateTime.TIME_WITH_SHORT_OFFSET
+                      )
+                    : ''}
                 </td>
               </tr>
             </tbody>
@@ -325,11 +328,14 @@ const Merchants: NextPage = (props) => {
                     className="absolute right-4 top-2 flex items-center justify-center gap-2 text-indigo-500/90 hover:underline"
                   >
                     {t('data-by')} SaintBot{' '}
-                    <Image
+                    <img
                       className="ml-2"
                       src={saintbotImage}
+                      alt="SaintBot"
                       width={20}
                       height={20}
+                      loading="lazy"
+                      decoding="async"
                     />
                   </a>
                   <div className="absolute right-5 top-7">
@@ -359,7 +365,7 @@ const Merchants: NextPage = (props) => {
                             mSchedules[1]
                               .slice(0, (mSchedules[1].length - 1) / 2)
                               .map((s) =>
-                                s.start.setZone(
+                                s.start!.setZone(
                                   viewLocalizedTime
                                     ? currDate.zone
                                     : serverTime.zone
@@ -400,7 +406,7 @@ const Merchants: NextPage = (props) => {
                             mSchedules[2]
                               .slice(0, (mSchedules[2].length - 1) / 2)
                               .map((s) =>
-                                s.start.setZone(
+                                s.start!.setZone(
                                   viewLocalizedTime
                                     ? currDate.zone
                                     : serverTime.zone
@@ -441,7 +447,7 @@ const Merchants: NextPage = (props) => {
                             mSchedules[3]
                               .slice(0, (mSchedules[3].length - 1) / 2)
                               .map((s) =>
-                                s.start.setZone(
+                                s.start!.setZone(
                                   viewLocalizedTime
                                     ? currDate.zone
                                     : serverTime.zone
@@ -490,21 +496,7 @@ const Merchants: NextPage = (props) => {
   )
 }
 
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-import { useTranslation } from 'next-i18next'
+import { useTranslation } from 'react-i18next'
 import classNames from 'classnames'
-
-export async function getStaticProps({ locale }: { locale: string }) {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale, [
-        'merchants',
-        'common',
-        'merchantConfig',
-      ])),
-      // Will be passed to the page component as props
-    },
-  }
-}
 
 export default Merchants

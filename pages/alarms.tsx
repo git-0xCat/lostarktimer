@@ -5,16 +5,16 @@ import { APIGameEvent, APIEventType } from '../common/api'
 import { GameEvent } from '../common'
 import { AlarmConfigModal } from '../components'
 import { DateTime, Duration, Interval } from 'luxon'
-import useLocalStorage from '@olerichter00/use-localstorage'
+import useLocalStorage from '../util/useLocalStorage'
 import { Howl, Howler } from 'howler'
 import { alert1, alert2, alert3, alert4, alert5, alert6 } from '../sounds'
-import 'core-js/features/array/at'
-import { IconSettings } from '@tabler/icons'
+import { IconSettings } from '@tabler/icons-react'
 import usePrevious from '../util/usePrevious'
 import { createTableData } from '../util/createTableData'
 import { RegionKey } from '../util/types/types'
 import { RegionTimeZoneMapping } from '../util/static'
-import { useTranslation } from 'next-i18next'
+import { isWithinNotifyWindow } from '../util/alarmTrigger'
+import { useTranslation } from 'react-i18next'
 var classNames = require('classnames')
 
 type AlertSoundKeys =
@@ -86,9 +86,9 @@ const Alarms: NextPage = () => {
     'US West'
   )
   const isMounted = useRef(false)
-  const defaultTheme = () => {
+  const defaultTheme = (): boolean => {
     // Defaults to system theme if unconfigured
-    return (
+    return Boolean(
       localStorage.getItem('darkMode') ||
       (window.matchMedia &&
         window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -126,9 +126,9 @@ const Alarms: NextPage = () => {
     undefined
   )
   const [todayEvents, setTodayEvents] = useState<Array<GameEvent>>([])
-  const [fullEventsTable, setFullEventsTable] = useState<Array<JSX.Element>>([])
+  const [fullEventsTable, setFullEventsTable] = useState<Array<React.JSX.Element>>([])
   const [currentEventsTable, setCurrentEventsTable] = useState<
-    Array<JSX.Element>
+    Array<React.JSX.Element>
   >([])
 
   const [selectedEventType, setSelectedEventType] = useState(-1)
@@ -228,7 +228,8 @@ const Alarms: NextPage = () => {
     let disabledAlarmsKeys = Object.keys(disabledAlarms || {})
     Object.entries(allEventData).forEach((eventType) => {
       const [type, monthDayMap] = eventType as [string, any]
-      let et = eventTypeIconMapping.find((et) => et.id.toString() === type)!
+      let et = eventTypeIconMapping.find((et) => et.id.toString() === type)
+      if (!et) return
       for (const [month, days] of Object.entries(monthDayMap) as [
         string,
         any
@@ -239,7 +240,8 @@ const Alarms: NextPage = () => {
               string,
               any
             ]) {
-              let gt = eventIDNameMapping.find((gt) => gt.id === eventId)!
+              let gt = eventIDNameMapping.find((gt) => gt.id === eventId)
+              if (!gt) continue
 
               let gameEvent = new GameEvent(et, gt)
               eventTime.forEach((time: string, idx: number) => {
@@ -300,9 +302,9 @@ const Alarms: NextPage = () => {
           return t.start && t.start.day === selectedDate.day
         }) !== undefined &&
         ge.times.length &&
-        ge.times.at(0)?.start.day === selectedDate.day &&
-        (ge.times.at(-1)?.start.day === selectedDate.plus({ days: 1 }).day ||
-          ge.times.at(-1)?.start.day === selectedDate.day)
+        ge.times.at(0)?.start?.day === selectedDate.day &&
+        (ge.times.at(-1)?.start?.day === selectedDate.plus({ days: 1 }).day ||
+          ge.times.at(-1)?.start?.day === selectedDate.day)
     )
 
     setGameEvents(gameEvents)
@@ -374,12 +376,8 @@ const Alarms: NextPage = () => {
         }
       }
 
-      let latest = event.latest(serverTime)
-      if (latest) {
-        let value = latest.start.diff(serverTime).valueOf()
-        if (!event.disabled && 0 <= value && value <= ms)
-          currEventsTable.push(event)
-        else allEventsTable.push(event)
+      if (isWithinNotifyWindow(event, serverTime, ms)) {
+        currEventsTable.push(event)
       } else {
         allEventsTable.push(event)
       }
@@ -395,8 +393,8 @@ const Alarms: NextPage = () => {
       let aTime = a.latest(serverTime)
       let bTime = b.latest(serverTime)
       if (aTime && bTime) {
-        let aTime = a.latest(serverTime).start.diff(serverTime).valueOf()
-        let bTime = b.latest(serverTime).start.diff(serverTime).valueOf()
+        let aTime = a.latest(serverTime).start!.diff(serverTime).valueOf()
+        let bTime = b.latest(serverTime).start!.diff(serverTime).valueOf()
 
         if (aTime < bTime) {
           finalCmp = -1
@@ -416,8 +414,8 @@ const Alarms: NextPage = () => {
     })
     currEventsTable = currEventsTable.sort(
       (a, b) =>
-        a.latest(serverTime).start.valueOf() -
-        b.latest(serverTime).start.valueOf()
+        a.latest(serverTime).start!.valueOf() -
+        b.latest(serverTime).start!.valueOf()
     )
     const currentEventsTableData = createTableData({
       events: currEventsTable,
@@ -520,20 +518,7 @@ const Alarms: NextPage = () => {
           <div className="flex items-center gap-2 ">
             <button
               className="btn border-none text-center text-xl text-stone-400 dark:bg-base-200"
-              onClick={(e) => {
-                let newDate = selectedDate.minus({ days: 1 })
-                if (
-                  gameEvents?.filter(
-                    (ge) =>
-                      ge.times.find(
-                        (t) =>
-                          t.start.day === newDate.day &&
-                          t.start.month === newDate.month
-                      ) !== undefined
-                  ).length
-                )
-                  setSelectedDate(newDate)
-              }}
+              onClick={(e) => setSelectedDate(selectedDate.minus({ days: 1 }))}
             >
               {'<<'}
             </button>
@@ -545,27 +530,14 @@ const Alarms: NextPage = () => {
                 {selectedDate.monthLong} {selectedDate.day}
               </span>
               {serverTime.hasSame(selectedDate, 'day') ? null : (
-                <span className="absolute -bottom-2 text-[0.6rem]">
+                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.6rem] font-normal opacity-70">
                   ({selectedDate.toRelative()})
                 </span>
               )}
             </button>
             <button
               className="btn border-none text-center text-xl text-stone-400 dark:bg-base-200"
-              onClick={(e) => {
-                let newDate = selectedDate.plus({ days: 1 })
-                if (
-                  gameEvents?.filter(
-                    (ge) =>
-                      ge.times.find(
-                        (t) =>
-                          t.start.day === newDate.day &&
-                          t.start.month === newDate.month
-                      ) !== undefined
-                  ).length
-                )
-                  setSelectedDate(newDate)
-              }}
+              onClick={(e) => setSelectedDate(selectedDate.plus({ days: 1 }))}
             >
               {'>>'}
             </button>
@@ -604,15 +576,18 @@ const Alarms: NextPage = () => {
                   {t('common:current-time')}:
                 </td>
                 <td
+                  suppressHydrationWarning
                   className={classNames({
                     'text-green-700 dark:text-success': viewLocalizedTime,
                   })}
                 >
-                  {currDate.toLocaleString(
-                    view24HrTime
-                      ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                      : DateTime.TIME_WITH_SHORT_OFFSET
-                  )}
+                  {mounted
+                    ? currDate.toLocaleString(
+                        view24HrTime
+                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                          : DateTime.TIME_WITH_SHORT_OFFSET
+                      )
+                    : ''}
                 </td>
               </tr>
 
@@ -626,15 +601,18 @@ const Alarms: NextPage = () => {
                   {t('common:server-time')}:
                 </td>
                 <td
+                  suppressHydrationWarning
                   className={classNames({
                     'text-green-700 dark:text-success': !viewLocalizedTime,
                   })}
                 >
-                  {serverTime.toLocaleString(
-                    view24HrTime
-                      ? DateTime.TIME_24_WITH_SHORT_OFFSET
-                      : DateTime.TIME_WITH_SHORT_OFFSET
-                  )}
+                  {mounted
+                    ? serverTime.toLocaleString(
+                        view24HrTime
+                          ? DateTime.TIME_24_WITH_SHORT_OFFSET
+                          : DateTime.TIME_WITH_SHORT_OFFSET
+                      )
+                    : ''}
                 </td>
               </tr>
             </tbody>
@@ -720,50 +698,40 @@ const Alarms: NextPage = () => {
               </tr>
               <tr className="flex">
                 <td className="w-1/4 min-w-fit bg-stone-400 dark:bg-base-200">
-                  <table className="table w-full ">
-                    <thead></thead>
-                    <tbody>
-                      <tr>
-                        <td className="p-0">
-                          <button
-                            className="btn btn-active btn-wide relative w-full justify-start pl-16"
-                            onClick={(event) => {
-                              buttonClick(event, -1)
-                            }}
-                            ref={buttons[0]}
-                          >
-                            <span className="">All</span>
-                            <div className="absolute right-8">
-                              {eventsInSection(-1)}
-                            </div>
-                          </button>
-                        </td>
-                      </tr>
-                      {eventTypeIconMapping.map((e: APIEventType, idx) => (
-                        <tr key={idx}>
-                          <td className="p-0">
-                            <button
-                              key={e.id}
-                              className="btn btn-wide relative w-full justify-start pl-16 pr-16"
-                              onClick={(event) => {
-                                buttonClick(event, e.id)
-                              }}
-                              ref={buttons[e.id + 1]}
-                            >
-                              <img
-                                src={`https://lostarkcodex.com/images/${e.iconUrl}`}
-                                className="absolute left-4"
-                              />
-                              {t(`categories.${e.name}`)}
-                              <div className="absolute right-8">
-                                {eventsInSection(e.id)}
-                              </div>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="flex flex-col">
+                    <button
+                      className="btn btn-active btn-wide relative w-full justify-start pl-16"
+                      onClick={(event) => {
+                        buttonClick(event, -1)
+                      }}
+                      ref={buttons[0]}
+                    >
+                      <span className="">All</span>
+                      <div className="absolute right-8">
+                        {eventsInSection(-1)}
+                      </div>
+                    </button>
+                    {eventTypeIconMapping.map((e: APIEventType) => (
+                      <button
+                        key={e.id}
+                        className="btn btn-wide relative w-full justify-start pl-16 pr-16"
+                        onClick={(event) => {
+                          buttonClick(event, e.id)
+                        }}
+                        ref={buttons[e.id + 1]}
+                      >
+                        <img
+                          src={`https://lostarkcodex.com/images/${e.iconUrl}`}
+                          className="absolute left-4"
+                          alt=""
+                        />
+                        {t(`categories.${e.name}`)}
+                        <div className="absolute right-8">
+                          {eventsInSection(e.id)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </td>
                 <td className="top-0 w-full bg-stone-400 dark:bg-base-200">
                   {currentEventsTable.length > 0 ? (
@@ -786,19 +754,4 @@ const Alarms: NextPage = () => {
   )
 }
 
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-
-export async function getStaticProps({ locale }: { locale: string }) {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale, [
-        'events',
-        'alarms',
-        'common',
-        'alarmConfig',
-      ])),
-      // Will be passed to the page component as props
-    },
-  }
-}
 export default Alarms

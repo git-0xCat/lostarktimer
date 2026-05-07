@@ -3,12 +3,11 @@ import merchantSchedules from '../data/merchantSchedules.json'
 import itemMapping from '../data/itemMapping.json'
 import itemRarity from '../data/itemRarity.json'
 import { DateTime, Interval, Zone } from 'luxon'
-import Image from 'next/image'
 import classNames from 'classnames'
 import { generateTimestampStrings } from '../util/createTableData'
 import WanderingMerchant from '../common/WanderingMerchant'
-import useLocalStorage from '@olerichter00/use-localstorage'
-import { useTranslation } from 'next-i18next'
+import useLocalStorage from '../util/useLocalStorage'
+import { useTranslation } from 'react-i18next'
 
 type ItemMappingKey = keyof typeof itemMapping
 
@@ -36,7 +35,7 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
   const [nextSpawnCountdown, setNextSpawnCountdown] = useState(
     merchant
       .nextSpawnTime(serverTime)
-      .start.setZone(serverTime.zone)
+      .start!.setZone(serverTime.zone)
       .diff(DateTime.now())
   )
   useEffect(() => {
@@ -44,7 +43,7 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
       setNextSpawnCountdown(
         merchant
           .nextSpawnTime(serverTime)
-          .start.setZone(serverTime.zone)
+          .start!.setZone(serverTime.zone)
           .diff(DateTime.now())
       )
     }, 1000)
@@ -222,7 +221,7 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
             {t('next-spawn')}:{'  '}
             {merchant
               .nextSpawnTime(serverTime)
-              ?.start.setZone(localizedTZ)
+              ?.start?.setZone(localizedTZ)
               .toLocaleString(
                 view24HrTime ? DateTime.TIME_24_SIMPLE : DateTime.TIME_SIMPLE
               )}
@@ -290,12 +289,14 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
                       textColor(rarity(item))
                     )}
                   >
-                    <Image
+                    <img
                       src={iconURL(item)}
+                      alt={itemMapping[String(item) as ItemMappingKey]?.name ?? ''}
                       className={gradientColor(rarity(item))}
                       width={20}
                       height={20}
-                      layout="fixed"
+                      loading="lazy"
+                      decoding="async"
                     />
                     <span className="ml-2 break-words capitalize">
                       {t(`items.${item}.name`)}

@@ -51,9 +51,11 @@ class WanderingMerchant {
   inProgress(serverTime: DateTime) {
     if (this.spawnTime != null) return true
     for (const interval of this.schedule) {
+      const { start, end } = interval
+      if (!start || !end) continue
       if (
-        interval.start.diff(serverTime).toMillis() < 0 &&
-        interval.end.diff(serverTime).toMillis() > 0
+        start.diff(serverTime).toMillis() < 0 &&
+        end.diff(serverTime).toMillis() > 0
       )
         return interval
     }
@@ -62,8 +64,10 @@ class WanderingMerchant {
   nextSpawnTime(serverTime: DateTime) {
     for (let idx = 0; idx < this.schedule.length; idx++) {
       let interval = this.schedule[idx]
-      let startDiff = interval.start.diff(serverTime).toMillis()
-      let endDiff = interval.end.diff(serverTime).toMillis()
+      const { start, end } = interval
+      if (!start || !end) continue
+      let startDiff = start.diff(serverTime).toMillis()
+      let endDiff = end.diff(serverTime).toMillis()
 
       // case: time before first event of day
       if (startDiff > 0) return interval

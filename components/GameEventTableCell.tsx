@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { GameEvent } from '../common'
 
-import Image from 'next/image'
 import { DateTime, Duration, Zone } from 'luxon'
 import classNames from 'classnames'
-import useLocalStorage from '@olerichter00/use-localstorage'
+import useLocalStorage from '../util/useLocalStorage'
 import { generateTimestampStrings } from '../util/createTableData'
-import { useTranslation } from 'next-i18next'
+import { useTranslation } from 'react-i18next'
 type CellProps = {
   gameEvent: GameEvent
   serverTime: DateTime
@@ -24,21 +23,20 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
     'hideGrandPrix',
     false
   )
+  const millisUntilLatest = (against: DateTime): number => {
+    const next = gameEvent.latest(serverTime)
+    if (!next || !next.start) return 0
+    return next.start.diff(against).toMillis()
+  }
   const [timeUntil, setTimeUntil] = useState(
-    Duration.fromMillis(
-      gameEvent.latest(serverTime)?.start.diff(serverTime).toMillis()
-    )
+    Duration.fromMillis(millisUntilLatest(serverTime))
   )
   useEffect(() => {
     if (!gameEvent.disabled) {
       const timer = setInterval(() => {
-        // setServerTime()
         setTimeUntil(
           Duration.fromMillis(
-            gameEvent
-              .latest(serverTime)
-              ?.start.diff(DateTime.now().setZone(serverTime.zone))
-              .toMillis()
+            millisUntilLatest(DateTime.now().setZone(serverTime.zone))
           )
         )
       }, 1000)
@@ -66,10 +64,13 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
         })}
       >
         <div className=" m-1 flex justify-center">
-          <Image
+          <img
             src={`https://lostarkcodex.com/icons/${gameEvent.gameEvent.iconUrl}`}
+            alt={gameEvent.gameEvent.name}
             width={38}
             height={38}
+            loading="lazy"
+            decoding="async"
           />
         </div>
         <div className="basis-11/12 items-center font-sans text-xs font-semibold">
@@ -144,7 +145,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
                   <li className="border-l-4 border-transparent">
                     <a
                       onClick={(e) => {
-                        let disabledUntil = gameEvent.latest(serverTime).end
+                        let disabledUntil = gameEvent.latest(serverTime).end!!
                         setDisabledAlarms({
                           ...disabledAlarms,
                           [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
@@ -161,7 +162,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
                       onClick={(e) => {
                         let disabledUntil = gameEvent
                           .latest(serverTime)
-                          .end.plus({ hours: 12 })
+                          .end!.plus({ hours: 12 })
                         setDisabledAlarms({
                           ...disabledAlarms,
                           [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
@@ -228,7 +229,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
                       onClick={(e) => {
                         let disabledUntil = gameEvent
                           .latest(serverTime)
-                          .end.plus({ hours: 336 })
+                          .end!.plus({ hours: 336 })
                         setDisabledAlarms({
                           ...disabledAlarms,
                           [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
@@ -281,7 +282,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
             <li className="border-l-4 border-transparent">
               <a
                 onClick={(e) => {
-                  let disabledUntil = gameEvent.latest(serverTime).end
+                  let disabledUntil = gameEvent.latest(serverTime).end!
                   setDisabledAlarms({
                     ...disabledAlarms,
                     [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
@@ -298,7 +299,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
                 onClick={(e) => {
                   let disabledUntil = gameEvent
                     .latest(serverTime)
-                    .end.plus({ hours: 12 })
+                    .end!.plus({ hours: 12 })
                   setDisabledAlarms({
                     ...disabledAlarms,
                     [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
@@ -365,7 +366,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
                 onClick={(e) => {
                   let disabledUntil = gameEvent
                     .latest(serverTime)
-                    .end.plus({ hours: 336 })
+                    .end!.plus({ hours: 336 })
                   setDisabledAlarms({
                     ...disabledAlarms,
                     [gameEvent.gameEvent.id]: disabledUntil.toMillis(),

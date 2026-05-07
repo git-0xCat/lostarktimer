@@ -1,4 +1,4 @@
-import { IconBrandDiscord } from '@tabler/icons'
+import { IconBrandDiscord } from '@tabler/icons-react'
 import React from 'react'
 
 const GitHubModal = () => {
