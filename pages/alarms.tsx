@@ -45,36 +45,40 @@ type EventIdMapping = [
 ]
 type EventTypeIconMapping = [eventType: string, eventIconUrl: string]
 
-type EventsJson = Record<string, [string, string, number | null]>
-type MsgsJson = [Record<string, [string, string]>, ...unknown[]]
+// Data is bundled (not in /public/) so it's not exposed at a stable
+// URL. It still ends up in the static JS chunk for /alarms but isn't
+// trivially scrapable.
+const eventIDNameMapping: Array<APIGameEvent> = Object.entries(
+  require('../data/events.json')
+).map((e) => {
+  const [id, [name, url, iLvl]] = e as EventIdMapping
+  return new APIGameEvent(id, name, url, iLvl)
+})
 
-const buildEventMapping = (events: EventsJson): APIGameEvent[] =>
-  Object.entries(events).map((e) => {
-    const [id, [name, url, iLvl]] = e as EventIdMapping
-    return new APIGameEvent(id, name, url, iLvl)
-  })
-
-const buildGroupedEvents = (mapping: APIGameEvent[]) => ({
-  'Arkesia Grand Prix': mapping
+const groupedEvents: Record<string, string[]> = {
+  'Arkesia Grand Prix': eventIDNameMapping
     .filter(({ name }) => name.includes('Grand Prix'))
     .map((e) => e.id),
-  'Field Bosses': mapping
+  'Field Bosses': eventIDNameMapping
     .filter(({ iconUrl }) => iconUrl === 'achieve_14_142.webp')
     .map((e) => e.id),
-  'Chaos Gates': mapping
+  'Chaos Gates': eventIDNameMapping
     .filter(({ iconUrl }) => iconUrl === 'achieve_13_11.webp')
     .sort((a, b) => b.minItemLevel - a.minItemLevel)
     .map((e) => e.id),
-  'Ghost Ships': mapping
+  'Ghost Ships': eventIDNameMapping
     .filter(({ name }) => name.includes('Ghost Ship'))
     .map((e) => e.id),
+}
+
+const eventTypeIconMapping: Array<APIEventType> = Object.entries(
+  require('../data/msgs.json')[0]
+).map(([idx, e]) => {
+  const [name, url] = e as EventTypeIconMapping
+  return new APIEventType(Number(idx), name, url)
 })
 
-const buildEventTypeMapping = (msgs: MsgsJson): APIEventType[] =>
-  Object.entries(msgs[0]).map(([idx, e]) => {
-    const [name, url] = e as EventTypeIconMapping
-    return new APIEventType(Number(idx), name, url)
-  })
+const allEventData: Record<string, any> = require('../data/data.json')
 
 const sounds = {
   'Alert 1': alert1,
@@ -88,46 +92,6 @@ const sounds = {
 const Alarms: NextPage = () => {
   const { t } = useTranslation('events')
   const [currDate, setCurrDate] = useState<DateTime>(DateTime.now())
-
-  // Lazy-load the event/message JSON instead of bundling them. The three
-  // files together are ~80 KB raw and used only on this page; fetching
-  // them at runtime keeps them out of the initial JS chunk and lets the
-  // browser cache them independently of the JS deploy.
-  const [allEventData, setAllEventData] = useState<
-    Record<string, any> | null
-  >(null)
-  const [eventIDNameMapping, setEventIDNameMapping] = useState<
-    APIGameEvent[]
-  >([])
-  const [eventTypeIconMapping, setEventTypeIconMapping] = useState<
-    APIEventType[]
-  >([])
-  const [groupedEvents, setGroupedEvents] = useState<
-    Record<string, string[]>
-  >({})
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      fetch('/data/data.json').then((r) => r.json()),
-      fetch('/data/events.json').then((r) => r.json()),
-      fetch('/data/msgs.json').then((r) => r.json()),
-    ])
-      .then(([data, events, msgs]) => {
-        if (cancelled) return
-        setAllEventData(data)
-        const mapping = buildEventMapping(events as EventsJson)
-        setEventIDNameMapping(mapping)
-        setGroupedEvents(buildGroupedEvents(mapping))
-        setEventTypeIconMapping(buildEventTypeMapping(msgs as MsgsJson))
-      })
-      .catch((err) => {
-        console.error('Failed to load event data:', err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   const [regionTZ, setRegionTZ] = useLocalStorage<string>(
     'regionTZ',
@@ -267,7 +231,7 @@ const Alarms: NextPage = () => {
   }, [serverTime.minute])
   // read and populate all game events
   useEffect(() => {
-    if (!mounted || regionTZ === undefined || !allEventData) return
+    if (!mounted || regionTZ === undefined) return
     let gameEvents: Array<GameEvent> = []
     let disabledAlarmsKeys = Object.keys(disabledAlarms || {})
     Object.entries(allEventData).forEach((eventType) => {
@@ -353,15 +317,7 @@ const Alarms: NextPage = () => {
 
     setGameEvents(gameEvents)
     setTodayEvents(todayEvents)
-  }, [
-    regionTZ,
-    selectedDate,
-    viewLocalizedTime,
-    view24HrTime,
-    allEventData,
-    eventTypeIconMapping,
-    eventIDNameMapping,
-  ])
+  }, [regionTZ, selectedDate, viewLocalizedTime, view24HrTime])
 
   // (re)generate full events table and current events table on dependency array change (mostly config changes)
   useEffect(() => {
@@ -770,11 +726,7 @@ const Alarms: NextPage = () => {
                   </table>
                 </div>
               ) : null}
-              {allEventData === null ? (
-                <div className="bg-card text-muted-foreground rounded-lg border p-8 text-center text-sm shadow-sm">
-                  Loading events…
-                </div>
-              ) : fullEventsTable.length === 0 ? (
+              {fullEventsTable.length === 0 ? (
                 <div className="bg-card flex flex-col items-center gap-2 rounded-lg border p-10 text-center shadow-sm">
                   <p className="text-sm font-semibold">
                     No events for{' '}
