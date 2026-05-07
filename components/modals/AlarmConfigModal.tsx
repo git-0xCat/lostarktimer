@@ -25,6 +25,11 @@ import {
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Separator } from '@/components/ui/separator'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const sounds = {
   'Alert 1': alert1,
@@ -168,7 +173,24 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
             <Row
               htmlFor="groupRepeats"
               label={t('group-repeat-events')}
-              hint="[?]"
+              hint={
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => e.preventDefault()}
+                      className="text-muted-foreground hover:text-foreground cursor-help text-xs"
+                      aria-label="What this does"
+                    >
+                      [?]
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    Combine all instances of Grand Prix, Field Bosses, Chaos
+                    Gates, and Ghost Ships into single events.
+                  </TooltipContent>
+                </Tooltip>
+              }
               control={
                 <Checkbox
                   id="groupRepeats"

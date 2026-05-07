@@ -15,30 +15,30 @@ interface Props {
 
 const SideBar = ({ onOpenGithub, onOpenChangelog }: Props) => {
   return (
-    <nav className="invisible fixed bottom-0 left-5 z-40 flex h-2/6 w-10 justify-center lg:visible">
+    <nav className="invisible fixed bottom-0 left-5 z-40 flex h-2/6 w-12 justify-center lg:visible">
       <div className="flex grow flex-col items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
           aria-label="GitHub"
           onClick={onOpenGithub}
-          className="hover:text-sky-400"
+          className="size-12 hover:text-sky-400"
         >
-          <IconBrandGithub />
+          <IconBrandGithub className="size-6" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
           aria-label="PayPal"
           asChild
-          className="hover:text-orange-400"
+          className="size-12 hover:text-orange-400"
         >
           <a
             href="https://www.paypal.com/paypalme/cwjoshuak"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <IconBrandPaypal />
+            <IconBrandPaypal className="size-6" />
           </a>
         </Button>
         <Button
@@ -46,9 +46,9 @@ const SideBar = ({ onOpenGithub, onOpenChangelog }: Props) => {
           size="icon"
           aria-label="Changelog"
           onClick={onOpenChangelog}
-          className="hover:text-sky-400"
+          className="size-12 hover:text-sky-400"
         >
-          <IconFileCode />
+          <IconFileCode className="size-6" />
         </Button>
         <Separator orientation="vertical" className="mt-3" />
       </div>
