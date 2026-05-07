@@ -12,7 +12,7 @@ import { IconSettings } from '@tabler/icons-react'
 import usePrevious from '../util/usePrevious'
 import { createTableData } from '../util/createTableData'
 import { RegionKey } from '../util/types/types'
-import { RegionTimeZoneMapping } from '../util/static'
+import { RegionTimeZoneMapping, resolveRegion } from '../util/static'
 import { isWithinNotifyWindow } from '../util/alarmTrigger'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -89,11 +89,11 @@ const Alarms: NextPage = () => {
   const [currDate, setCurrDate] = useState<DateTime>(DateTime.now())
   const [regionTZ, setRegionTZ] = useLocalStorage<string>(
     'regionTZ',
-    RegionTimeZoneMapping['US West']
+    RegionTimeZoneMapping['NA East']
   )
   const [regionTZName, setRegionTZName] = useLocalStorage<RegionKey>(
     'regionTZName',
-    'US West'
+    'NA East'
   )
   const isMounted = useRef(false)
   const defaultTheme = (): boolean => {
@@ -554,7 +554,7 @@ const Alarms: NextPage = () => {
 
             <div className="flex flex-col items-start gap-2 lg:items-end">
               <Select
-                value={regionTZName ?? 'US West'}
+                value={resolveRegion(regionTZName)}
                 onValueChange={(v) => {
                   const region = v as RegionKey
                   setRegionTZ(RegionTimeZoneMapping[region])

@@ -1,70 +1,20 @@
 {
-  "US West": [
-    "Mari",
-    "Valtan",
-    "Enviska",
-    "Akkan",
-    "Bergstrom",
-    "Shandi",
-    "Rohendel"
+  "NA East": [
+    "Balthorr",
+    "Inanna",
+    "Luterra",
+    "Nineveh",
+    "Vairgrys"
   ],
-  "US East": [
-    "Azena",
-    "Una",
-    "Regulus",
-    "Avesta",
-    "Galatur",
-    "Karta",
-    "Ladon",
-    "Kharmine",
-    "Elzowin",
-    "Sasha",
-    "Adrinne",
-    "Aldebaran",
-    "Zosma",
-    "Vykas",
-    "Danube"
+  "NA West": [
+    "Brelshaza",
+    "Thaemine"
   ],
   "EU Central": [
-    "Neria",
-    "Kadan",
-    "Trixion",
-    "Calvasus",
-    "Thirain",
-    "Zinnervale",
-    "Asta",
-    "Wei",
-    "Slen",
-    "Sceptrum",
-    "Procyon",
-    "Beatrice",
-    "Inanna",
-    "Thaemine",
-    "Sirius",
-    "Antares",
-    "Brelshaza",
-    "Nineveh",
-    "Mokoko"
-  ],
-  "EU West": [
-    "Rethramis",
-    "Tortoyk",
-    "Moonkeep",
-    "Stonehearth",
-    "Shadespire",
-    "Tragon",
-    "Petrania",
-    "Punika"
-  ],
-  "South America": [
-    "Kazeros",
-    "Agaton",
-    "Gienah",
     "Arcturus",
-    "Yorn",
-    "Feiton",
-    "Vern",
-    "Kurzan",
-    "Prideholme"
+    "Elpon",
+    "Gienah",
+    "Ortuus",
+    "Ratik"
   ]
 }

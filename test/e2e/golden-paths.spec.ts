@@ -40,21 +40,23 @@ test.describe('alarms page', () => {
 
   test('region select switches persisted region', async ({ page }) => {
     await page.goto('/alarms')
-    // The page initialises regionTZName to 'US West' on first visit.
-    await expect(page.getByText('US West (UTC-7)')).toBeVisible()
+    // The page initialises regionTZName to 'NA East' on first visit.
+    await expect(page.getByText('NA East (America/New_York)')).toBeVisible()
 
     // Open the region trigger and pick a different option.
-    await page.getByText('US West (UTC-7)').click()
-    await page.getByRole('option', { name: /US East/ }).click()
-    await expect(page.getByText('US East (UTC-4)')).toBeVisible()
+    await page.getByText('NA East (America/New_York)').click()
+    await page.getByRole('option', { name: /NA West/ }).click()
+    await expect(
+      page.getByText('NA West (America/Los_Angeles)')
+    ).toBeVisible()
 
     // Reload — selection should survive once the hook hydrates from
     // localStorage. Poll on the visible label rather than asserting
     // immediately because the hook reads inside useEffect.
     await page.reload()
-    await expect(page.getByText('US East (UTC-4)')).toBeVisible({
-      timeout: 5000,
-    })
+    await expect(
+      page.getByText('NA West (America/Los_Angeles)')
+    ).toBeVisible({ timeout: 5000 })
   })
 
   test('filter buttons highlight when selected', async ({ page }) => {

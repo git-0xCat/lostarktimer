@@ -10,7 +10,7 @@ import merchantsData from '../data/merchants.json'
 import { createTableData } from '../util/createTableData'
 import WanderingMerchant from '../common/WanderingMerchant'
 import { MerchantAPIData, RegionKey, ServerKey } from '../util/types/types'
-import { RegionTimeZoneMapping } from '../util/static'
+import { RegionTimeZoneMapping, resolveRegion } from '../util/static'
 import { IconSettings } from '@tabler/icons-react'
 import MerchantConfigModal from '../components/modals/MerchantConfigModal'
 import { useTranslation } from 'react-i18next'
@@ -35,7 +35,7 @@ const Merchants: NextPage = (props) => {
   const { t } = useTranslation('merchants')
   const [regionTZName, setRegionTZName] = useLocalStorage<RegionKey>(
     'regionTZName',
-    'US West'
+    'NA East'
   )
   const [selectedServer, setSelectedServer] = useLocalStorage<ServerKey>(
     'merchantServer',
@@ -223,7 +223,7 @@ const Merchants: NextPage = (props) => {
             <div className="flex flex-col items-start gap-2 lg:items-end">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Select
-                  value={regionTZName ?? 'US West'}
+                  value={resolveRegion(regionTZName)}
                   onValueChange={(v) => {
                     const region = v as RegionKey
                     setRegionTZName(region)
