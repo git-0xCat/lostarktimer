@@ -519,6 +519,7 @@ const Alarms: NextPage = () => {
               </Button>
               <button
                 type="button"
+                aria-label="Selected date"
                 onClick={() => setSelectedDate(serverTime)}
                 className="bg-card hover:bg-accent flex h-11 min-w-[170px] flex-col items-center justify-center rounded-md border px-4 transition-colors"
               >
