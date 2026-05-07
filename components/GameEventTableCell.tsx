@@ -1,17 +1,32 @@
 import React, { useEffect, useState } from 'react'
 import { GameEvent } from '../common'
-
 import { DateTime, Duration, Zone } from 'luxon'
-import classNames from 'classnames'
+import { MoreVertical } from 'lucide-react'
 import useLocalStorage from '../util/useLocalStorage'
 import { generateTimestampStrings } from '../util/createTableData'
 import { useTranslation } from 'react-i18next'
+
+import { cn } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+
 type CellProps = {
   gameEvent: GameEvent
   serverTime: DateTime
   localizedTZ: Zone
   view24HrTime: boolean | undefined
 }
+
+// Event IDs that the legacy code treated as "repeated grand-prix-style"
+// events; toggling 'group repeated events' shows/hides duplicates.
+const REPEATED_EVENT_IDS = new Set([945, 946, 947, 948, 949, 950, 951])
 
 const GameEventTableCell = (props: CellProps): React.ReactElement => {
   const { t } = useTranslation('events')
@@ -23,6 +38,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
     'hideGrandPrix',
     false
   )
+
   const millisUntilLatest = (against: DateTime): number => {
     const next = gameEvent.latest(serverTime)
     if (!next || !next.start) return 0
@@ -32,376 +48,181 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
     Duration.fromMillis(millisUntilLatest(serverTime))
   )
   useEffect(() => {
-    if (!gameEvent.disabled) {
-      const timer = setInterval(() => {
-        setTimeUntil(
-          Duration.fromMillis(
-            millisUntilLatest(DateTime.now().setZone(serverTime.zone))
-          )
+    if (gameEvent.disabled) return
+    const timer = setInterval(() => {
+      setTimeUntil(
+        Duration.fromMillis(
+          millisUntilLatest(DateTime.now().setZone(serverTime.zone))
         )
-      }, 1000)
-
-      return () => {
-        clearInterval(timer) // Return a funtion to clear the timer so that it will stop being called on unmount
-      }
-    }
+      )
+    }, 1000)
+    return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (gameEvent === null) {
-    return (
-      <td className="m-2 flex basis-1/2 items-center space-x-4 border-0 bg-stone-100 bg-stone-200/80 p-2 dark:bg-base-100"></td>
-    )
+  const applyDisable = (until: DateTime | null | undefined) => {
+    if (!until) return
+    setDisabledAlarms({
+      ...(disabledAlarms ?? {}),
+      [gameEvent.gameEvent.id]: until.toMillis(),
+    })
+    gameEvent.disabled = until
   }
+
+  const enable = () => {
+    if (!disabledAlarms) return
+    const next = { ...disabledAlarms }
+    delete next[gameEvent.gameEvent.id]
+    gameEvent.disabled = null
+    setDisabledAlarms(next)
+  }
+
+  const latestEnd = (): DateTime | null => {
+    const next = gameEvent.latest(serverTime)
+    return next?.end ?? null
+  }
+
+  const disableOnce = () => applyDisable(latestEnd())
+  const disable12Hours = () => applyDisable(latestEnd()?.plus({ hours: 12 }))
+  const disableThreeWeeks = () =>
+    applyDisable(latestEnd()?.plus({ hours: 336 }))
+
+  const disableDailyReset = () => {
+    let until = DateTime.now().set({
+      hour: 5,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    })
+    if (until <= DateTime.now()) until = until.plus({ days: 1 })
+    applyDisable(until)
+  }
+
+  const disableWeeklyReset = () => {
+    let until = DateTime.now().set({
+      weekday: 4,
+      hour: 5,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    })
+    if (until <= DateTime.now()) until = until.plus({ days: 7 })
+    applyDisable(until)
+  }
+
+  const isRepeatedEvent = REPEATED_EVENT_IDS.has(Number(gameEvent.gameEvent.id))
+  const isGrouped = isRepeatedEvent && hideGrandPrix
+  const isDisabled = !!gameEvent.disabled
+
+  const eventLabel = isGrouped
+    ? gameEvent.groupName
+    : t(`${gameEvent.gameEvent.id}`)
+
   return (
-    <td
-      key={`${gameEvent.uuid} td`}
-      className="dropdown m-2 flex basis-1/2 border-0 bg-stone-200/80 p-2 shadow-md hover:cursor-pointer  dark:bg-base-100 dark:hover:bg-base-100/70"
-      tabIndex={0}
-    >
+    <td className="basis-1/2 p-2 align-top">
       <div
-        className={classNames('flex basis-full items-center space-x-4', {
-          'opacity-20': gameEvent.disabled,
-        })}
-      >
-        <div className=" m-1 flex justify-center">
-          <img
-            src={`https://lostarkcodex.com/icons/${gameEvent.gameEvent.iconUrl}`}
-            alt={gameEvent.gameEvent.name}
-            width={38}
-            height={38}
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-        <div className="basis-11/12 items-center font-sans text-xs font-semibold">
-          <div className="ml-2 mr-4">
-            <span className="block uppercase ">
-              {!(hideGrandPrix && gameEvent.groupName) &&
-                `[${gameEvent.gameEvent.minItemLevel}] `}
-              {(hideGrandPrix && gameEvent.groupName) ||
-                t(`${gameEvent.gameEvent.id}`)}
-              <span className="float-right text-amber-500 dark:text-amber-200">
-                {gameEvent.disabled
-                  ? null
-                  : `-${timeUntil.toFormat('hh:mm:ss')}`}
-              </span>
-            </span>
-            <span className="inline whitespace-normal text-justify">
-              {gameEvent.times.map((t, idx) =>
-                generateTimestampStrings(
-                  gameEvent,
-                  t,
-                  serverTime,
-                  localizedTZ,
-                  view24HrTime || false,
-                  idx
-                )
-              )}
-            </span>
-          </div>
-        </div>
-      </div>
-      <ul
-        tabIndex={0}
-        className="min-w-52 dropdown-content menu rounded-box top-0 right-0 bg-base-300 p-2 text-sm shadow"
-      >
-        {[945, 946, 947, 948, 949, 950, 951].includes(
-          Number(gameEvent.gameEvent.id)
-        ) ? (
-          hideGrandPrix ? (
-            <>
-              <li className="border-l-4 border-transparent">
-                <a
-                  onClick={(e) => {
-                    setHideGrandPrix(false)
-                    ;(document.activeElement as HTMLElement).blur()
-                  }}
-                >
-                  {t('alarms:repeated-events.show')}
-                </a>
-              </li>
-              {gameEvent.disabled ? (
-                <>
-                  {' '}
-                  <li className="border-l-4 border-transparent">
-                    <a
-                      onClick={(e) => {
-                        if (disabledAlarms) {
-                          delete disabledAlarms[gameEvent.gameEvent.id]
-                          gameEvent.disabled = null
-                          setDisabledAlarms({
-                            ...disabledAlarms,
-                          })
-                        }
-                        ;(document.activeElement as HTMLElement).blur()
-                      }}
-                    >
-                      {t('alarms:enable')}
-                    </a>
-                  </li>
-                </>
-              ) : (
-                <>
-                  <li className="border-l-4 border-transparent">
-                    <a
-                      onClick={(e) => {
-                        let disabledUntil = gameEvent.latest(serverTime).end!!
-                        setDisabledAlarms({
-                          ...disabledAlarms,
-                          [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                        })
-                        gameEvent.disabled = disabledUntil
-                        ;(document.activeElement as HTMLElement).blur()
-                      }}
-                    >
-                      {t('alarms:disable.once')}
-                    </a>
-                  </li>
-                  <li className="border-l-4 border-transparent">
-                    <a
-                      onClick={(e) => {
-                        let disabledUntil = gameEvent
-                          .latest(serverTime)
-                          .end!.plus({ hours: 12 })
-                        setDisabledAlarms({
-                          ...disabledAlarms,
-                          [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                        })
-                        gameEvent.disabled = disabledUntil
-                        ;(document.activeElement as HTMLElement).blur()
-                      }}
-                    >
-                      {t('alarms:disable.12hrs')}
-                    </a>
-                  </li>
-                  <li className="border-l-4 border-transparent">
-                    <a
-                      onClick={(e) => {
-                        let disabledUntil = DateTime.now().set({
-                          hour: 5,
-                          minute: 0,
-                          second: 0,
-                          millisecond: 0,
-                        })
-                        disabledUntil =
-                          disabledUntil > DateTime.now()
-                            ? disabledUntil
-                            : disabledUntil.plus({ days: 1 })
-                        setDisabledAlarms({
-                          ...disabledAlarms,
-                          [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                        })
-                        gameEvent.disabled = disabledUntil
-                        ;(document.activeElement as HTMLElement).blur()
-                      }}
-                    >
-                      {t(`alarms:disable.daily-reset`)}
-                    </a>
-                  </li>
-                  <li className="border-l-4 border-transparent">
-                    <a
-                      onClick={(e) => {
-                        let disabledUntil = DateTime.now().set({
-                          weekday: 4,
-                          hour: 5,
-                          minute: 0,
-                          second: 0,
-                          millisecond: 0,
-                        })
-                        disabledUntil =
-                          disabledUntil > DateTime.now()
-                            ? disabledUntil
-                            : disabledUntil.plus({ days: 7 })
-                        setDisabledAlarms({
-                          ...disabledAlarms,
-                          [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                        })
-                        gameEvent.disabled = disabledUntil
-                        ;(document.activeElement as HTMLElement).blur()
-                      }}
-                    >
-                      {t('alarms:disable.weekly-reset')}
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      className="border-l-4 border-transparent hover:border-red-500"
-                      onClick={(e) => {
-                        let disabledUntil = gameEvent
-                          .latest(serverTime)
-                          .end!.plus({ hours: 336 })
-                        setDisabledAlarms({
-                          ...disabledAlarms,
-                          [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                        })
-                        gameEvent.disabled = disabledUntil
-                        ;(document.activeElement as HTMLElement).blur()
-                      }}
-                    >
-                      {t('alarms:disable.all')}
-                    </a>
-                  </li>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <li className="border-l-4 border-transparent">
-                <a
-                  onClick={(e) => {
-                    setHideGrandPrix(true)
-                    ;(document.activeElement as HTMLElement).blur()
-                  }}
-                >
-                  {t('alarms:repeated-events.hide')}
-                </a>
-              </li>
-            </>
-          )
-        ) : gameEvent.disabled ? (
-          <>
-            <li className="border-l-4 border-transparent">
-              <a
-                onClick={(e) => {
-                  if (disabledAlarms) {
-                    delete disabledAlarms[gameEvent.gameEvent.id]
-                    gameEvent.disabled = null
-                    setDisabledAlarms({
-                      ...disabledAlarms,
-                    })
-                  }
-                  ;(document.activeElement as HTMLElement).blur()
-                }}
-              >
-                {t('alarms:enable')}
-              </a>
-            </li>
-          </>
-        ) : (
-          <>
-            <li className="border-l-4 border-transparent">
-              <a
-                onClick={(e) => {
-                  let disabledUntil = gameEvent.latest(serverTime).end!
-                  setDisabledAlarms({
-                    ...disabledAlarms,
-                    [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                  })
-                  gameEvent.disabled = disabledUntil
-                  ;(document.activeElement as HTMLElement).blur()
-                }}
-              >
-                {t('alarms:disable.once')}
-              </a>
-            </li>
-            <li className="border-l-4 border-transparent">
-              <a
-                onClick={(e) => {
-                  let disabledUntil = gameEvent
-                    .latest(serverTime)
-                    .end!.plus({ hours: 12 })
-                  setDisabledAlarms({
-                    ...disabledAlarms,
-                    [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                  })
-                  gameEvent.disabled = disabledUntil
-                  ;(document.activeElement as HTMLElement).blur()
-                }}
-              >
-                {t('alarms:disable.12hrs')}
-              </a>
-            </li>
-            <li className="border-l-4 border-transparent">
-              <a
-                onClick={(e) => {
-                  let disabledUntil = DateTime.utc().set({
-                    hour: 10,
-                    minute: 0,
-                    second: 0,
-                    millisecond: 0,
-                  })
-                  disabledUntil =
-                    disabledUntil > DateTime.now()
-                      ? disabledUntil
-                      : disabledUntil.plus({ days: 1 })
-                  setDisabledAlarms({
-                    ...disabledAlarms,
-                    [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                  })
-                  gameEvent.disabled = disabledUntil
-                  ;(document.activeElement as HTMLElement).blur()
-                }}
-              >
-                {t('alarms:disable.daily-reset')}
-              </a>
-            </li>
-            <li className="border-l-4 border-transparent">
-              <a
-                onClick={(e) => {
-                  let disabledUntil = DateTime.utc().set({
-                    weekday: 4,
-                    hour: 10,
-                    minute: 0,
-                    second: 0,
-                    millisecond: 0,
-                  })
-                  disabledUntil =
-                    disabledUntil > DateTime.now()
-                      ? disabledUntil
-                      : disabledUntil.plus({ days: 7 })
-                  setDisabledAlarms({
-                    ...disabledAlarms,
-                    [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                  })
-                  gameEvent.disabled = disabledUntil
-                  ;(document.activeElement as HTMLElement).blur()
-                }}
-              >
-                {t('alarms:disable.weekly-reset')}
-              </a>
-            </li>
-            <li>
-              <a
-                className="border-l-4 border-transparent hover:border-red-500"
-                onClick={(e) => {
-                  let disabledUntil = gameEvent
-                    .latest(serverTime)
-                    .end!.plus({ hours: 336 })
-                  setDisabledAlarms({
-                    ...disabledAlarms,
-                    [gameEvent.gameEvent.id]: disabledUntil.toMillis(),
-                  })
-                  gameEvent.disabled = disabledUntil
-                  ;(document.activeElement as HTMLElement).blur()
-                }}
-              >
-                {t('alarms:disable.all')}
-              </a>
-            </li>
-          </>
+        className={cn(
+          'bg-card group relative flex items-start gap-3 rounded-lg border p-3 shadow-sm transition',
+          isDisabled && 'opacity-50'
         )}
-      </ul>
+      >
+        <img
+          src={`https://lostarkcodex.com/icons/${gameEvent.gameEvent.iconUrl}`}
+          alt={gameEvent.gameEvent.name}
+          width={36}
+          height={36}
+          loading="lazy"
+          decoding="async"
+          className="size-9 shrink-0 rounded-md"
+        />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="truncate text-sm font-semibold uppercase">
+              {!isGrouped && (
+                <span className="text-muted-foreground mr-1 font-normal">
+                  [{gameEvent.gameEvent.minItemLevel}]
+                </span>
+              )}
+              {eventLabel}
+            </p>
+            {!isDisabled && (
+              <span className="text-amber-500 dark:text-amber-300 shrink-0 font-mono text-xs tabular-nums">
+                -{timeUntil.toFormat('hh:mm:ss')}
+              </span>
+            )}
+          </div>
+          <p className="text-muted-foreground mt-1 flex flex-wrap gap-x-1 text-xs">
+            {gameEvent.times.map((interval, idx) =>
+              generateTimestampStrings(
+                gameEvent,
+                interval,
+                serverTime,
+                localizedTZ,
+                view24HrTime || false,
+                idx
+              )
+            )}
+          </p>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Event actions"
+              className="size-7 shrink-0 opacity-60 transition group-hover:opacity-100"
+            >
+              <MoreVertical className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {isRepeatedEvent && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => setHideGrandPrix(!hideGrandPrix)}
+                >
+                  {hideGrandPrix
+                    ? t('alarms:repeated-events.show')
+                    : t('alarms:repeated-events.hide')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {isDisabled ? (
+              <DropdownMenuItem onClick={enable}>
+                {t('alarms:enable')}
+              </DropdownMenuItem>
+            ) : (
+              <>
+                <DropdownMenuLabel>{t('alarms:disable.until')}</DropdownMenuLabel>
+                <DropdownMenuItem onClick={disableOnce}>
+                  {t('alarms:disable.once')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={disable12Hours}>
+                  {t('alarms:disable.12hrs')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={disableDailyReset}>
+                  {t('alarms:disable.daily-reset')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={disableWeeklyReset}>
+                  {t('alarms:disable.weekly-reset')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={disableThreeWeeks}
+                >
+                  {t('alarms:disable.all')}
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </td>
   )
 }
-/**return (
-                <>
-                  <span
-                    key={idx}>
-<span className={t.start.diff(serverTime).valueOf() < 0 ? "text-amber-500" : ""}></span>
 
-
-                    </span>
-                    className={`${
-                      t.start.diff(serverTime).valueOf() > 0
-                        ? 'text-success'
-                        : 'text-slate-500'
-                    }`}
-                  >{`${t.start.toLocaleString(DateTime.TIME_24_SIMPLE)}${
-                    !t.isEmpty()
-                      ? ` - ${t.end.toLocaleString(DateTime.TIME_24_SIMPLE)}`
-                      : ''
-                  } `}</span>{' '}
-                  {idx < gameEvent.times.length - 1 ? ' / ' : ''}
-                </> */
 export default GameEventTableCell

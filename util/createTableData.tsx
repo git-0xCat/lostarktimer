@@ -66,7 +66,7 @@ export const createTableData = (
       children.push(
         <td
           key={uuidv4()}
-          className="invisible m-2 flex basis-1/2 items-center space-x-4 p-2"
+          className="invisible basis-1/2 p-2"
         ></td>
       )
     }
@@ -109,10 +109,10 @@ export const generateTimestampStrings = (
     <span key={`${event.uuid} ${idx}`}>
       <span
         className={classNames({
-          'text-slate-400/25': diff < 0,
-          'text-amber-500 dark:text-amber-200':
+          'text-muted-foreground/40': diff < 0,
+          'text-amber-500 dark:text-amber-300':
             inProgress || (diff >= 0 && diff < 900000),
-          'text-green-700 dark:text-success': diff >= 900000,
+          'text-emerald-600 dark:text-emerald-400': diff >= 900000,
         })}
       >
         {startTime}
@@ -120,7 +120,7 @@ export const generateTimestampStrings = (
       </span>
       <span
         className={classNames({
-          'text-slate-400/30': diff < 0,
+          'text-muted-foreground/40': diff < 0,
         })}
       >
         {idx < eventTimes.length - 1 ? ' / ' : ''}

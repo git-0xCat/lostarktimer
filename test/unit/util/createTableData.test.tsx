@@ -127,7 +127,8 @@ describe('generateTimestampStrings', () => {
       intervalAt('2026-05-06T09:00', '2026-05-06T09:30'),
       at('2026-05-06T10:00')
     )
-    expect(c.querySelector('.text-slate-400\\/25')).toBeTruthy()
+    const span = c.querySelector('span > span')
+    expect(span?.className).toMatch(/text-muted-foreground/)
   })
 
   it('marks intervals starting within 15 minutes with the imminent-color class', () => {
@@ -154,6 +155,6 @@ describe('generateTimestampStrings', () => {
       at('2026-05-06T10:00')
     )
     const span = c.querySelector('span > span')
-    expect(span?.className).toMatch(/text-green-700/)
+    expect(span?.className).toMatch(/text-emerald-600/)
   })
 })

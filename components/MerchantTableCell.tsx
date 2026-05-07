@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import merchantSchedules from '../data/merchantSchedules.json'
 import itemMapping from '../data/itemMapping.json'
 import itemRarity from '../data/itemRarity.json'
-import { DateTime, Interval, Zone } from 'luxon'
-import classNames from 'classnames'
-import { generateTimestampStrings } from '../util/createTableData'
+import { DateTime, Zone } from 'luxon'
 import WanderingMerchant from '../common/WanderingMerchant'
 import useLocalStorage from '../util/useLocalStorage'
 import { useTranslation } from 'react-i18next'
+
+import { cn } from '@/lib/utils'
 
 type ItemMappingKey = keyof typeof itemMapping
 
@@ -17,48 +16,86 @@ interface CellProps {
   localizedTZ: Zone
   view24HrTime: boolean
 }
-let mSchedules: { [key: number]: Interval[] } = {}
+
+const RARITY_TEXT: Record<0 | 1 | 2 | 3, string> = {
+  0: 'text-[#6fc300]',
+  1: 'text-[#00b5ff]',
+  2: 'text-[#bf00fe]',
+  3: 'text-[#f39303]',
+}
+
+const rarityFromId = (id: number): 0 | 1 | 2 | 3 => {
+  const ir = itemRarity as { [key: string]: 0 | 1 | 2 | 3 }
+  return ir[String(id)] ?? 0
+}
+
+const goodItemRarityClass = (goodItem: string | null): string => {
+  if (!goodItem) return ''
+  switch (goodItem.split(' ')[0]) {
+    case 'No':
+      return RARITY_TEXT[0]
+    case 'Seria':
+    case 'Sian':
+      return RARITY_TEXT[1]
+    case 'Madnick':
+    case 'Mokamoka':
+    case 'Kaysarr':
+      return RARITY_TEXT[2]
+    case 'Wei':
+    case 'Legendary':
+      return RARITY_TEXT[3]
+    default:
+      return ''
+  }
+}
+
+const iconURL = (item: number) => {
+  const mapping = itemMapping[String(item) as ItemMappingKey]
+  return mapping
+    ? `https://lostarkcodex.com/icons/${mapping.fileName}`
+    : ''
+}
+
+const openLocationImage = (imageUrl: string, title: string) => {
+  if (!imageUrl) return
+  window.open(
+    `https://i.imgur.com/${imageUrl}`,
+    title,
+    'left=20,top=20,width=1000,height=600,toolbar=0,resizable=1,noopener=1,noreferrer=1'
+  )
+}
 
 const MerchantTableCell = (props: CellProps): React.ReactElement => {
   const { t } = useTranslation('merchants')
   const { merchant, serverTime, localizedTZ, view24HrTime } = props
-  Object.entries(merchantSchedules).forEach(
-    ([key, schedule]) =>
-      (mSchedules[Number(key)] = schedule.map(({ h, m }) => {
-        let start = DateTime.fromObject(
-          { hour: h, minute: m }
-          // { zone: serverZone }
-        )
-        return Interval.fromDateTimes(start, start.plus({ minutes: 25 }))
-      }))
-  )
-  const [nextSpawnCountdown, setNextSpawnCountdown] = useState(
-    merchant
-      .nextSpawnTime(serverTime)
-      .start!.setZone(serverTime.zone)
-      .diff(DateTime.now())
-  )
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNextSpawnCountdown(
-        merchant
-          .nextSpawnTime(serverTime)
-          .start!.setZone(serverTime.zone)
-          .diff(DateTime.now())
-      )
-    }, 1000)
-    return () => {
-      clearInterval(timer)
-    }
-  })
-  const [hideMerchantItems, setHideMerchantItems] = useLocalStorage(
+
+  const [hideMerchantItems] = useLocalStorage<boolean>(
     'hideMerchantItems',
     false
   )
-  const [hidePotentialSpawns, sethidePotentialSpawns] = useLocalStorage(
+  const [hidePotentialSpawns] = useLocalStorage<boolean>(
     'hidePotentialMerchantLocationSpawns',
     false
   )
+
+  const computeCountdown = () => {
+    const next = merchant.nextSpawnTime(serverTime)
+    if (!next?.start) return null
+    return next.start.setZone(serverTime.zone).diff(DateTime.now())
+  }
+
+  const [nextSpawnCountdown, setNextSpawnCountdown] = useState(
+    computeCountdown()
+  )
+  useEffect(() => {
+    const timer = setInterval(() => setNextSpawnCountdown(computeCountdown()), 1000)
+    return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const inProgress = !!merchant.inProgress(serverTime)
+  const localInProgress = !!merchant.inProgress(serverTime.setZone(localizedTZ))
+
   let imageUrl = ''
   if (merchant.location) {
     imageUrl =
@@ -68,97 +105,45 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
         ) || ''
       ]
   }
-  const gradientColor = (id: 0 | 1 | 2 | 3) => {
-    if (id === 0) return 'bg-gradient-to-br from-[#1e2f08] to-[#4c8204]'
-    if (id === 1) return 'bg-gradient-to-br from-[#082c3b] to-[#0479a9]'
-    if (id === 2) return 'bg-gradient-to-br from-[#2e083b] to-[#8004a9]'
-    if (id === 3) return 'bg-gradient-to-br from-[#392509] to-[#a16305]'
-  }
-  const textColor = (id: 0 | 1 | 2 | 3) => {
-    if (id === 0) return 'text-[#6fc300]'
-    if (id === 1) return 'text-[#00b5ff]'
-    if (id === 2) return 'text-[#bf00fe]'
-    if (id === 3) return 'text-[#f39303]'
-  }
-  const rarity = (id: number): 0 | 1 | 2 | 3 => {
-    let ir = itemRarity as { [key: string]: 0 | 1 | 2 | 3 }
-    return ir[String(id)]
-  }
-  const merchantGoodItemToRarity = (goodItem: string | null): string => {
-    if (goodItem) {
-      let first = goodItem.split(' ')[0]
-      switch (first) {
-        case 'No':
-          return 'text-[#6fc300]'
-        case 'Seria':
-        case 'Sian':
-          return 'text-[#00b5ff]'
-        case 'Madnick':
-        case 'Mokamoka':
-        case 'Kaysarr':
-          return 'text-[#bf00fe]'
-        case 'Wei':
-        case 'Legendary':
-          return 'text-[#f39303]'
-        default:
-          return ''
-      }
-    }
-    return ''
-  }
-  const onClickOpenWindow = (imageUrl: string, title: string) => {
-    window.open(
-      `https://i.imgur.com/${imageUrl}`,
-      title,
-      'left=20,top=20,width=1000,height=600,toolbar=0,resizable=1,noopener=1,noreferrer=1'
-    )
-    return false
-  }
-  const iconURL = (item: number) => {
-    let iconName = itemMapping[String(item) as ItemMappingKey].fileName
-    return `https://lostarkcodex.com/icons/${iconName}`
-  }
-  //class="dropdown m-2 flex basis-1/2 bg-stone-100 p-2 hover:cursor-pointer dark:bg-base-100 dark:hover:bg-base-100/70"
-  return (
-    <td
-      key={`${merchant.name}`}
-      className={classNames(
-        'm-2 flex basis-1/2 flex-col whitespace-normal border-b-0  font-sans text-xs font-semibold shadow-md ',
-        {
-          'bg-stone-200/90 dark:bg-amber-200/10': merchant.spawned,
 
-          'bg-stone-400 brightness-75 dark:bg-base-100':
-            !merchant.spawned && !merchant.inProgress(serverTime),
-          'bg-stone-300/80 dark:bg-base-100': !merchant.spawned,
-        }
-      )}
-    >
-      {/* <div className="flex h-full flex-row bg-stone-200 p-2 dark:bg-base-100"> */}
-      <div className="flex flex-row px-4">
-        <div className="flex grow flex-col uppercase">
-          <span>
-            <span
-              className={classNames('block text-lg uppercase', {
-                'text-green-700 dark:text-success': merchant.inProgress(
-                  serverTime.setZone(localizedTZ)
-                ),
-              })}
+  const nextSpawnLabel = merchant
+    .nextSpawnTime(serverTime)
+    ?.start?.setZone(localizedTZ)
+    .toLocaleString(view24HrTime ? DateTime.TIME_24_SIMPLE : DateTime.TIME_SIMPLE)
+
+  return (
+    <td className="basis-1/2 p-2 align-top">
+      <div
+        className={cn(
+          'group bg-card flex flex-col gap-3 rounded-lg border p-4 shadow-sm transition',
+          merchant.spawned &&
+            'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800/50',
+          !merchant.spawned && !inProgress && 'opacity-70'
+        )}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p
+              className={cn(
+                'text-base font-semibold uppercase tracking-tight',
+                localInProgress && 'text-emerald-600 dark:text-emerald-400'
+              )}
             >
-              {merchant.name} ({t(`locations.${merchant.continent}`)}){' '}
-              {merchant.inProgress(serverTime) ? (
-                <span className="whitespace-nowrap text-xs text-amber-500 dark:text-amber-300">
-                  {' '}
+              {merchant.name}{' '}
+              <span className="text-muted-foreground font-normal normal-case">
+                ({t(`locations.${merchant.continent}`)})
+              </span>
+              {inProgress && (
+                <span className="ml-2 text-xs font-mono text-amber-600 dark:text-amber-300">
                   {serverTime
-                    .set({
-                      minute: 30,
-                    })
+                    .set({ minute: 30 })
                     .setZone(localizedTZ)
                     .toLocaleString(
                       view24HrTime
                         ? DateTime.TIME_24_SIMPLE
                         : DateTime.TIME_SIMPLE
                     )}{' '}
-                  -{' '}
+                  –{' '}
                   {serverTime
                     .set({ minute: 55 })
                     .setZone(localizedTZ)
@@ -168,147 +153,125 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
                         : DateTime.TIME_SIMPLE
                     )}
                 </span>
-              ) : null}
-            </span>
+              )}
+            </p>
 
-            {merchant.inProgress(serverTime) ? (
-              <div className="mb-1 text-base">
-                <span className="uppercase">
-                  {t('location')}:{' '}
-                  <span
-                    className={classNames({
-                      'text-blue-500 hover:underline': merchant.spawned,
-                    })}
-                  >
-                    {merchant.spawned ? (
-                      <span
-                        className="cursor-pointer"
-                        onClick={() =>
-                          onClickOpenWindow(imageUrl, merchant.location || '')
-                        }
-                      >
-                        {t(`locations.${merchant.location}`)}
-                      </span>
-                    ) : (
-                      'Unknown'
-                    )}
-                  </span>
-                </span>
-                <br />
-                Item:{' '}
-                {merchant.goodItems
-                  ? merchant.goodItems.map((goodItem, index) => (
-                      <span
-                        className={classNames({
-                          [`${merchantGoodItemToRarity(goodItem)}`]:
-                            merchant.spawned,
-                        })}
-                      >
-                        {goodItem}
-                        {index === 0 ? <span>, </span> : ''}
-                      </span>
-                    ))
-                  : 'Unknown'}
+            {inProgress && (
+              <div className="text-muted-foreground mt-1 space-y-0.5 text-sm">
+                <div>
+                  <span className="uppercase">{t('location')}: </span>
+                  {merchant.spawned ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openLocationImage(imageUrl, merchant.location || '')
+                      }
+                      className="text-blue-500 underline-offset-4 hover:underline"
+                    >
+                      {t(`locations.${merchant.location}`)}
+                    </button>
+                  ) : (
+                    <span>Unknown</span>
+                  )}
+                </div>
+                <div>
+                  <span className="uppercase">Item: </span>
+                  {merchant.goodItems
+                    ? merchant.goodItems.map((goodItem, index) => (
+                        <span
+                          key={`${merchant.name}-good-${index}`}
+                          className={
+                            merchant.spawned
+                              ? goodItemRarityClass(goodItem)
+                              : undefined
+                          }
+                        >
+                          {goodItem}
+                          {index === 0 ? ', ' : ''}
+                        </span>
+                      ))
+                    : 'Unknown'}
+                </div>
               </div>
-            ) : null}
-          </span>
-          <span
-            className={classNames('uppercase', {
-              'text-base': merchant.spawned,
-              'text-sm': !merchant.spawned,
-            })}
-          >
-            {t('next-spawn')}:{'  '}
-            {merchant
-              .nextSpawnTime(serverTime)
-              ?.start?.setZone(localizedTZ)
-              .toLocaleString(
-                view24HrTime ? DateTime.TIME_24_SIMPLE : DateTime.TIME_SIMPLE
-              )}
-            <span
-              className={classNames(
-                'ml-6 whitespace-nowrap text-amber-600 dark:text-amber-300',
-                {
-                  hidden: merchant.inProgress(serverTime),
-                }
-              )}
-            >
-              -{nextSpawnCountdown.toFormat('hh:mm:ss')}
-            </span>
-          </span>
-          <span className="block uppercase">{merchant.spawned}</span>{' '}
-        </div>
-        <div
-          className={classNames('flex basis-1/4 flex-col text-center', {
-            hidden: merchant.spawned || hidePotentialSpawns,
-          })}
-        >
-          <span>{t('potential-spawns')}</span>
-          {Object.entries(merchant.locationImages).map(
-            ([locationName, imgUrl], idx, arr) => (
-              <span key={`${merchant.name}-${locationName}${imgUrl}`}>
-                <span
-                  className="cursor-pointer text-blue-500 hover:underline"
-                  onClick={() => onClickOpenWindow(imgUrl, locationName)}
-                >
-                  {t(`locations.${locationName}`)}
+            )}
+
+            <div className="text-muted-foreground mt-2 flex items-baseline gap-2 text-sm">
+              <span className="uppercase">{t('next-spawn')}:</span>
+              <span className="font-mono tabular-nums">{nextSpawnLabel}</span>
+              {!inProgress && nextSpawnCountdown && (
+                <span className="text-amber-600 dark:text-amber-300 font-mono text-xs">
+                  -{nextSpawnCountdown.toFormat('hh:mm:ss')}
                 </span>
-                {idx + 1 < arr.length ? <br /> : ''}
-              </span>
-            )
-          )}
-          <br />
-        </div>
-      </div>
-      <div
-        className={classNames(
-          'space-between mt-2 flex w-full flex-col gap-6 self-end px-4 uppercase xl:flex-row',
-          { hidden: hideMerchantItems }
-        )}
-      >
-        {[
-          { title: 'Rapport', items: merchant.items.rapport },
-          { title: 'Cards', items: merchant.items.cards },
-          { title: 'Cooking', items: merchant.items.cooking },
-        ].map(({ title, items }, idx) => {
-          return items.length ? (
-            <div
-              key={`${merchant.name}-${title}`}
-              className={classNames({
-                'basis-1/3': idx % 2 == 0,
-                'basis-1/4': idx % 2 != 0,
-              })}
-            >
-              <div className="flex flex-col">
-                <span className="font-semibold">{title}</span>
-                {items.map((item) => (
-                  <div
-                    key={`${merchant.name}-${title}-${item}`}
-                    className={classNames(
-                      'flex flex-row text-sm',
-                      textColor(rarity(item))
-                    )}
-                  >
-                    <img
-                      src={iconURL(item)}
-                      alt={itemMapping[String(item) as ItemMappingKey]?.name ?? ''}
-                      className={gradientColor(rarity(item))}
-                      width={20}
-                      height={20}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <span className="ml-2 break-words capitalize">
-                      {t(`items.${item}.name`)}
-                    </span>
-                  </div>
-                ))}
+              )}
+            </div>
+          </div>
+
+          {!merchant.spawned && !hidePotentialSpawns && (
+            <div className="text-muted-foreground w-32 shrink-0 text-right text-xs">
+              <div className="mb-1 uppercase">{t('potential-spawns')}</div>
+              <div className="space-y-0.5">
+                {Object.entries(merchant.locationImages).map(
+                  ([locationName, imgUrl]) => (
+                    <button
+                      key={`${merchant.name}-${locationName}`}
+                      type="button"
+                      onClick={() => openLocationImage(imgUrl, locationName)}
+                      className="block w-full text-right text-blue-500 underline-offset-4 hover:underline"
+                    >
+                      {t(`locations.${locationName}`)}
+                    </button>
+                  )
+                )}
               </div>
             </div>
-          ) : null
-        })}
+          )}
+        </div>
+
+        {!hideMerchantItems && (
+          <div className="grid grid-cols-2 gap-3 border-t pt-3 xl:grid-cols-3">
+            {[
+              { title: 'Rapport', items: merchant.items.rapport },
+              { title: 'Cards', items: merchant.items.cards },
+              { title: 'Cooking', items: merchant.items.cooking },
+            ]
+              .filter(({ items }) => items.length > 0)
+              .map(({ title, items }) => (
+                <div key={`${merchant.name}-${title}`}>
+                  <p className="mb-1 text-xs font-semibold uppercase">
+                    {title}
+                  </p>
+                  <ul className="space-y-1">
+                    {items.map((item) => (
+                      <li
+                        key={`${merchant.name}-${title}-${item}`}
+                        className={cn(
+                          'flex items-center gap-2 text-xs',
+                          RARITY_TEXT[rarityFromId(item)]
+                        )}
+                      >
+                        <img
+                          src={iconURL(item)}
+                          alt={
+                            itemMapping[String(item) as ItemMappingKey]?.name ??
+                            ''
+                          }
+                          width={20}
+                          height={20}
+                          loading="lazy"
+                          decoding="async"
+                          className="size-5 shrink-0 rounded-sm"
+                        />
+                        <span className="truncate capitalize">
+                          {t(`items.${item}.name`)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+          </div>
+        )}
       </div>
-      {/* </div> */}
     </td>
   )
 }
