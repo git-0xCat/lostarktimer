@@ -1,6 +1,5 @@
 import { DateTime, Interval } from 'luxon'
 import { v4 as uuidv4 } from 'uuid'
-import Item from './Item'
 
 type MerchantItems = { rapport: number[]; cards: number[]; cooking: number[] }
 class WanderingMerchant {
