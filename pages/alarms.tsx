@@ -45,36 +45,37 @@ type EventIdMapping = [
 ]
 type EventTypeIconMapping = [eventType: string, eventIconUrl: string]
 
-const eventIDNameMapping: Array<APIGameEvent> = Object.entries(
-  require('../data/events.json')
-).map((e) => {
-  const [id, [name, url, iLvl]] = e as EventIdMapping
-  return new APIGameEvent(id, name, url, iLvl)
-})
+type EventsJson = Record<string, [string, string, number | null]>
+type MsgsJson = [Record<string, [string, string]>, ...unknown[]]
 
-const groupedEvents = {
-  'Arkesia Grand Prix': eventIDNameMapping
+const buildEventMapping = (events: EventsJson): APIGameEvent[] =>
+  Object.entries(events).map((e) => {
+    const [id, [name, url, iLvl]] = e as EventIdMapping
+    return new APIGameEvent(id, name, url, iLvl)
+  })
+
+const buildGroupedEvents = (mapping: APIGameEvent[]) => ({
+  'Arkesia Grand Prix': mapping
     .filter(({ name }) => name.includes('Grand Prix'))
     .map((e) => e.id),
-  'Field Bosses': eventIDNameMapping
+  'Field Bosses': mapping
     .filter(({ iconUrl }) => iconUrl === 'achieve_14_142.webp')
     .map((e) => e.id),
-  'Chaos Gates': eventIDNameMapping
+  'Chaos Gates': mapping
     .filter(({ iconUrl }) => iconUrl === 'achieve_13_11.webp')
-    .sort((a, b) => b.minItemLevel - a.minItemLevel) // this is a bit of a hack to use one of the hourly gates as the canonical one
+    .sort((a, b) => b.minItemLevel - a.minItemLevel)
     .map((e) => e.id),
-  'Ghost Ships': eventIDNameMapping
+  'Ghost Ships': mapping
     .filter(({ name }) => name.includes('Ghost Ship'))
     .map((e) => e.id),
-}
-
-const eventTypeIconMapping: Array<APIEventType> = Object.entries(
-  require('../data/msgs.json')[0]
-).map(([idx, e]) => {
-  const [name, url] = e as EventTypeIconMapping
-  return new APIEventType(Number(idx), name, url)
 })
-const allEventData = require('../data/data.json')
+
+const buildEventTypeMapping = (msgs: MsgsJson): APIEventType[] =>
+  Object.entries(msgs[0]).map(([idx, e]) => {
+    const [name, url] = e as EventTypeIconMapping
+    return new APIEventType(Number(idx), name, url)
+  })
+
 const sounds = {
   'Alert 1': alert1,
   'Alert 2': alert2,
@@ -87,6 +88,47 @@ const sounds = {
 const Alarms: NextPage = () => {
   const { t } = useTranslation('events')
   const [currDate, setCurrDate] = useState<DateTime>(DateTime.now())
+
+  // Lazy-load the event/message JSON instead of bundling them. The three
+  // files together are ~80 KB raw and used only on this page; fetching
+  // them at runtime keeps them out of the initial JS chunk and lets the
+  // browser cache them independently of the JS deploy.
+  const [allEventData, setAllEventData] = useState<
+    Record<string, any> | null
+  >(null)
+  const [eventIDNameMapping, setEventIDNameMapping] = useState<
+    APIGameEvent[]
+  >([])
+  const [eventTypeIconMapping, setEventTypeIconMapping] = useState<
+    APIEventType[]
+  >([])
+  const [groupedEvents, setGroupedEvents] = useState<
+    Record<string, string[]>
+  >({})
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      fetch('/data/data.json').then((r) => r.json()),
+      fetch('/data/events.json').then((r) => r.json()),
+      fetch('/data/msgs.json').then((r) => r.json()),
+    ])
+      .then(([data, events, msgs]) => {
+        if (cancelled) return
+        setAllEventData(data)
+        const mapping = buildEventMapping(events as EventsJson)
+        setEventIDNameMapping(mapping)
+        setGroupedEvents(buildGroupedEvents(mapping))
+        setEventTypeIconMapping(buildEventTypeMapping(msgs as MsgsJson))
+      })
+      .catch((err) => {
+        console.error('Failed to load event data:', err)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const [regionTZ, setRegionTZ] = useLocalStorage<string>(
     'regionTZ',
     RegionTimeZoneMapping['NA East']
@@ -225,7 +267,7 @@ const Alarms: NextPage = () => {
   }, [serverTime.minute])
   // read and populate all game events
   useEffect(() => {
-    if (!mounted || regionTZ === undefined) return
+    if (!mounted || regionTZ === undefined || !allEventData) return
     let gameEvents: Array<GameEvent> = []
     let disabledAlarmsKeys = Object.keys(disabledAlarms || {})
     Object.entries(allEventData).forEach((eventType) => {
@@ -311,7 +353,15 @@ const Alarms: NextPage = () => {
 
     setGameEvents(gameEvents)
     setTodayEvents(todayEvents)
-  }, [regionTZ, selectedDate, viewLocalizedTime, view24HrTime])
+  }, [
+    regionTZ,
+    selectedDate,
+    viewLocalizedTime,
+    view24HrTime,
+    allEventData,
+    eventTypeIconMapping,
+    eventIDNameMapping,
+  ])
 
   // (re)generate full events table and current events table on dependency array change (mostly config changes)
   useEffect(() => {
@@ -720,9 +770,30 @@ const Alarms: NextPage = () => {
                   </table>
                 </div>
               ) : null}
-              <table className="w-full">
-                <tbody>{fullEventsTable}</tbody>
-              </table>
+              {allEventData === null ? (
+                <div className="bg-card text-muted-foreground rounded-lg border p-8 text-center text-sm shadow-sm">
+                  Loading events…
+                </div>
+              ) : fullEventsTable.length === 0 ? (
+                <div className="bg-card flex flex-col items-center gap-2 rounded-lg border p-10 text-center shadow-sm">
+                  <p className="text-sm font-semibold">
+                    No events for{' '}
+                    {selectedDate.toLocaleString({
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {selectedEventType === -1
+                      ? 'The schedule is empty for this day. Try a nearby date — or this category might not have rotations on this date.'
+                      : 'Nothing in this category for this day. Try the All filter or a nearby date.'}
+                  </p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <tbody>{fullEventsTable}</tbody>
+                </table>
+              )}
             </main>
           </div>
         </div>
