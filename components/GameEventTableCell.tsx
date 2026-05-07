@@ -150,7 +150,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
             </p>
             {!isDisabled && timeUntil && (
               <span className="text-amber-500 dark:text-amber-300 shrink-0 font-mono text-xs tabular-nums">
-                -{timeUntil.toFormat('hh:mm:ss')}
+                {timeUntil.toFormat('hh:mm:ss')}
               </span>
             )}
           </div>

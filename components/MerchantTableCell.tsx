@@ -200,7 +200,7 @@ const MerchantTableCell = (props: CellProps): React.ReactElement => {
               <span className="font-mono tabular-nums">{nextSpawnLabel}</span>
               {!inProgress && nextSpawnCountdown && (
                 <span className="text-amber-600 dark:text-amber-300 font-mono text-xs">
-                  -{nextSpawnCountdown.toFormat('hh:mm:ss')}
+                  {nextSpawnCountdown.toFormat('hh:mm:ss')}
                 </span>
               )}
             </div>

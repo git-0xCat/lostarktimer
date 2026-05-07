@@ -662,7 +662,7 @@ const Alarms: NextPage = () => {
                   'group flex items-center justify-between rounded-md border px-3 py-2 text-sm font-medium transition',
                   selectedEventType === -1
                     ? 'bg-secondary text-secondary-foreground'
-                    : 'hover:bg-accent'
+                    : 'bg-card hover:bg-accent'
                 )}
               >
                 <span>All</span>
@@ -679,7 +679,7 @@ const Alarms: NextPage = () => {
                     'group flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm font-medium transition',
                     selectedEventType === e.id
                       ? 'bg-secondary text-secondary-foreground'
-                      : 'hover:bg-accent'
+                      : 'bg-card hover:bg-accent'
                   )}
                 >
                   <span className="flex items-center gap-2">
