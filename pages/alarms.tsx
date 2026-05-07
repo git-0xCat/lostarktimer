@@ -541,7 +541,7 @@ const Alarms: NextPage = () => {
                 <ChevronRight className="size-5" />
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 aria-label="Open alarm settings"
                 className="size-11"

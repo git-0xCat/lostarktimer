@@ -153,13 +153,23 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="truncate text-sm font-semibold uppercase">
+            <p className="flex min-w-0 items-baseline gap-2 truncate text-sm font-semibold uppercase">
               {!isGrouped && (
-                <span className="text-muted-foreground mr-1 font-normal">
+                <span className="text-muted-foreground font-normal">
                   [{gameEvent.gameEvent.minItemLevel}]
                 </span>
               )}
-              {eventLabel}
+              <span className="truncate">{eventLabel}</span>
+              {isDisabled && (
+                <span className="bg-muted text-muted-foreground inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                  Disabled
+                  {gameEvent.disabled && (
+                    <span className="text-muted-foreground/70 normal-case">
+                      · {gameEvent.disabled.toRelative()}
+                    </span>
+                  )}
+                </span>
+              )}
             </p>
             {!isDisabled && timeUntil && (
               <span className="text-amber-500 dark:text-amber-300 shrink-0 font-mono text-xs tabular-nums">

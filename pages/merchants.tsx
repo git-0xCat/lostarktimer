@@ -244,7 +244,7 @@ const Merchants: NextPage = (props) => {
                 Wandering Merchants
               </h1>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 aria-label="Open merchant settings"
                 className="size-11"
@@ -374,14 +374,6 @@ const Merchants: NextPage = (props) => {
                   )
                 : ''}
             </span>
-            <a
-              href="https://discord.gg/HfXQpmpaD5"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto inline-flex items-center rounded-md border border-amber-500/40 px-3 py-1 text-xs font-medium text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
-            >
-              {t('vote')}
-            </a>
           </div>
 
           <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
