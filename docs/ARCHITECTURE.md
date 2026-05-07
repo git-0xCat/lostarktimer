@@ -76,10 +76,10 @@ import(/* webpackChunkName: "alarms-day-[request]" */
   `../data/days/${month}-${day}.json`)
 ```
 
-Webpack scans `data/days/*.json` at build time and emits one
-fingerprinted chunk per file. Chunks are served at non-stable URLs
-(hash changes per deploy), so they're not trivially scrapable —
-unlike a `/public/data/data.json` which would be a single curl.
+Webpack scans `data/days/*.json` at build time and emits one chunk
+per file. The alarms page only loads the day the user is currently
+viewing, so initial-render payload drops by ~70 KB per visit
+compared to loading the full schedule.
 
 ## Theme system
 

@@ -21,15 +21,21 @@ a WIP banner pending crowdsourced rebuild).
 pages/
   _app.tsx         page shell, footer, modal-state owners (gh + changelog)
   _document.tsx    inline pre-hydration script that sets .dark class to avoid FOUC
+  _error.tsx       Pages-Router error boundary; forwards exceptions to Sentry
   alarms.tsx       main route — date selector, filter sidebar, event cards
   merchants.tsx    merchant tracker (parked, WIP banner)
 components/
   ui/              shadcn primitives (Button, Dialog, Select, etc.)
   modals/          Alarm/Merchant/Changelog/GitHub modals — controlled <Dialog>
+  analytics/       UmamiScript + CloudflareAnalytics (env-driven, prod-only)
   GameEventTableCell.tsx   per-event card with disable DropdownMenu
   MerchantTableCell.tsx    per-merchant card
   NavBar.tsx               header (brand, tabs, locale)
   SideBar.tsx              fixed icon column on lg+ (gh, paypal, changelog)
+instrumentation.ts         Next 16 server/edge bootstrap → Sentry init
+instrumentation-client.ts  Next 16 client bootstrap → Sentry init
+sentry.{server,edge}.config.ts  per-runtime Sentry init (gated on VERCEL_ENV)
+.env.example     documents Umami + Sentry public/private vars (no Firebase/Mongo — both unused)
 util/
   alarmTrigger.ts          isWithinNotifyWindow predicate (pure, tested)
   createTableData.tsx      row-pairing + time-chip rendering
@@ -136,12 +142,10 @@ e2e job builds and runs Playwright with artifact upload.
 
 ## Data pipeline
 
-The schedule on `data/{data,events,msgs}.json` comes from a private
-scraper at `~/Projects/lostark-timers-scraper`
-(`cwjoshuak/lostark-timers-scraper` on GitHub). It runs weekly on
-cron, normalizes the source (midnight dedup + month rollover), and
-opens a PR here with the updated three files. See
-`docs/DATA_PIPELINE.md` for the full flow.
+`data/{data,events,msgs}.json` is updated by an external pipeline that
+runs weekly and opens PRs here with cleaned schedule files. PRs are
+titled `chore(data): weekly schedule update`. The pipeline lives outside
+this repo. See `docs/decisions/0015-scraper-resiliency.md`.
 
 ## What the merchants page is doing
 
@@ -154,19 +158,12 @@ the schedule reference cards.
 
 ## Related repos
 
-- `~/Projects/lostark-timers-scraper` (private) — Python scraper +
-  GitHub Action that PRs new data here. Resilient fetch/parse with
-  pytest coverage. See `docs/DATA_PIPELINE.md`.
 - `~/Projects/WanderLost` — clone of `Xeio/WanderLost` (powers
   `lostmerchants.com`). Reference for the 2024 server-merge topology
   in `data/regions.json` and the eventual merchants rebuild.
 
 ## See also
 
-- **`docs/NEXT_SESSION.md` — read this first.** Status snapshot,
-  what's blocking deploy, latent issues, and things deliberately not
-  done.
+- `docs/decisions/` — ADRs for non-obvious choices (start at the README)
 - `docs/ARCHITECTURE.md` — runtime data flow diagram
-- `docs/DECISIONS.md` — log of why-we-chose-X for non-obvious calls
-- `docs/DEPLOY.md` — deploy + scraper-pipeline activation steps
-- `docs/DATA_PIPELINE.md` — scraper → lostark-alarms PR flow
+- `docs/DEPLOY.md` — deploy steps

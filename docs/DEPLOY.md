@@ -22,47 +22,26 @@ preview URL (`lostark-alarms-<branch>.vercel.app`). Catches
 prod-only regressions (env-var differences, edge-runtime issues,
 build-time vs runtime path quirks) before they hit users.
 
-## Activating the data pipeline
+## Vercel environment variables
 
-The auto-PR weekly-update flow needs three things on the user's side:
+Set in Vercel → Project → Settings → Environment Variables. **All for
+the Production environment only** (preview / development should leave
+these unset so analytics dashboards stay clean).
 
-1. **Push the scraper repo.** From `~/Projects/lostark-timers-scraper`,
-   `git push`. The local commits include the resilient scraper, the
-   normalizer, the pytest suite, and the workflow that PRs cleaned
-   data here.
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_UMAMI_SRC` | Umami analytics script URL |
+| `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | Umami site ID |
+| `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (public, ships to client) |
+| `SENTRY_ORG` | Sentry org slug — read by build plugin |
+| `SENTRY_PROJECT` | Sentry project slug — read by build plugin |
+| `SENTRY_AUTH_TOKEN` | Sentry build-plugin token for sourcemap upload |
 
-2. **Add the `LOSTARK_ALARMS_TOKEN` secret** on
-   `cwjoshuak/lostark-timers-scraper` (Settings → Secrets and variables
-   → Actions). Use a fine-grained PAT scoped to
-   `cwjoshuak/lostark-alarms` only, with permissions:
-   - Contents: write
-   - Pull requests: write
+`SENTRY_AUTH_TOKEN` should be rotated periodically (sentry.io →
+Settings → Auth Tokens).
 
-3. **Trigger the workflow once.** Actions tab → "Update Timers" →
-   Run workflow. Confirms it can scrape, normalize, and open a PR
-   here. Subsequent runs fire on the Monday 10:00 UTC cron.
-
-The scraper writes to its own `data/` directory and copies into
-`data/` here. The next prebuild on Vercel will regenerate
-`data/days/` chunks from the new `data.json`. No manual step.
-
-## Reverting
-
-```bash
-git revert <sha>   # individual commits
-```
-
-The session is split into ~25 atomic commits. Look at `git log
---oneline` and revert per concern:
-
-- Modernization itself: `chore(deps): modernize stack...`
-- shadcn rewrite: `feat(ui): scaffold shadcn...` plus the four phase commits
-- Region migration: `feat(regions): adopt 2024 server topology...`
-- Per-day chunking: `perf(alarms): pre-build per-day data chunks...`
-- +10 fix: `fix(alarms): apply +10min offset to both start AND end...`
-
-Each phase is independently revertable in theory, though later
-commits will probably need cascading reverts in practice.
+The Node.js Version setting under Vercel → Project → Settings → General
+should be **22.x** to match `.nvmrc`.
 
 ## Watching prod
 
@@ -72,10 +51,8 @@ After merging:
   select works, settings modal opens, dark mode persists.
 - Check `lostarktimer.app/merchants` — WIP banner visible, schedule
   reference cards render, no console errors.
-- Watch the next weekly run of the scraper workflow. First run
-  should auto-PR a `data/data.json` update; merging that triggers a
-  Vercel rebuild which regenerates `data/days/` and ships fresh
-  schedule data.
+- Sentry dashboard for any new error groups in the first 30 min.
+- Umami dashboard to confirm pageviews are flowing.
 
 ## Rollback during prod incident
 
