@@ -29,7 +29,7 @@ type CellProps = {
 const REPEATED_EVENT_IDS = new Set([945, 946, 947, 948, 949, 950, 951])
 
 const GameEventTableCell = (props: CellProps): React.ReactElement => {
-  const { t } = useTranslation('events')
+  const { t, i18n } = useTranslation('events')
   const { gameEvent, serverTime, localizedTZ, view24HrTime } = props
   const [disabledAlarms, setDisabledAlarms] = useLocalStorage<{
     [key: string]: number
@@ -112,13 +112,23 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
   const isGrouped = isRepeatedEvent && hideGrandPrix
   const isDisabled = !!gameEvent.disabled
 
+  // Prefer the metadata name from data/events.json — it's freshly
+  // scraped and accurate. Fall back to i18n only when the metadata is
+  // empty, or when a non-English locale provides a real translation
+  // (the en/events.json file is stale; zh/events.json has actual
+  // translations worth keeping).
+  const metadataName = gameEvent.gameEvent.name
   const translated = t(`${gameEvent.gameEvent.id}`)
-  const fallbackName = gameEvent.gameEvent.name
+  const hasTranslation = translated !== gameEvent.gameEvent.id
   const eventLabel = isGrouped
     ? gameEvent.groupName
-    : translated === gameEvent.gameEvent.id
-      ? fallbackName
-      : translated
+    : metadataName
+      ? i18n.language !== 'en' && hasTranslation
+        ? translated
+        : metadataName
+      : hasTranslation
+        ? translated
+        : gameEvent.gameEvent.id
 
   return (
     <td className="basis-full p-2 align-top md:basis-1/2">

@@ -655,47 +655,60 @@ const Alarms: NextPage = () => {
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
             <aside className="flex flex-row flex-wrap gap-1 lg:flex-col">
-              <button
-                ref={buttons[0]}
-                onClick={(event) => buttonClick(event, -1)}
-                className={cn(
-                  'group flex items-center justify-between rounded-md border px-3 py-2 text-sm font-medium transition',
-                  selectedEventType === -1
-                    ? 'bg-secondary text-secondary-foreground'
-                    : 'bg-card hover:bg-accent'
-                )}
-              >
-                <span>All</span>
-                <span className="text-muted-foreground text-xs tabular-nums">
-                  {eventsInSection(-1)}
-                </span>
-              </button>
-              {eventTypeIconMapping.map((e: APIEventType) => (
-                <button
-                  key={e.id}
-                  ref={buttons[e.id + 1]}
-                  onClick={(event) => buttonClick(event, e.id)}
-                  className={cn(
-                    'group flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm font-medium transition',
-                    selectedEventType === e.id
-                      ? 'bg-secondary text-secondary-foreground'
-                      : 'bg-card hover:bg-accent'
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <img
-                      src={`https://lostarkcodex.com/images/${e.iconUrl}`}
-                      alt=""
-                      className="size-5 shrink-0"
-                      loading="lazy"
-                    />
-                    {t(`categories.${e.name}`)}
-                  </span>
-                  <span className="text-muted-foreground text-xs tabular-nums">
-                    {eventsInSection(e.id)}
-                  </span>
-                </button>
-              ))}
+              {(() => {
+                const filterClass = (active: boolean) =>
+                  cn(
+                    'group flex items-center justify-between gap-2 rounded-md border px-3 py-2.5 text-sm font-medium shadow-sm transition active:scale-[0.99]',
+                    active
+                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                      : 'bg-card hover:bg-accent hover:-translate-y-px hover:shadow'
+                  )
+                const countClass = (active: boolean) =>
+                  cn(
+                    'text-xs tabular-nums',
+                    active
+                      ? 'text-primary-foreground/70'
+                      : 'text-muted-foreground'
+                  )
+                return (
+                  <>
+                    <button
+                      ref={buttons[0]}
+                      onClick={(event) => buttonClick(event, -1)}
+                      className={filterClass(selectedEventType === -1)}
+                    >
+                      <span>All</span>
+                      <span className={countClass(selectedEventType === -1)}>
+                        {eventsInSection(-1)}
+                      </span>
+                    </button>
+                    {eventTypeIconMapping.map((e: APIEventType) => {
+                      const active = selectedEventType === e.id
+                      return (
+                        <button
+                          key={e.id}
+                          ref={buttons[e.id + 1]}
+                          onClick={(event) => buttonClick(event, e.id)}
+                          className={filterClass(active)}
+                        >
+                          <span className="flex items-center gap-2">
+                            <img
+                              src={`https://lostarkcodex.com/images/${e.iconUrl}`}
+                              alt=""
+                              className="size-5 shrink-0"
+                              loading="lazy"
+                            />
+                            {t(`categories.${e.name}`)}
+                          </span>
+                          <span className={countClass(active)}>
+                            {eventsInSection(e.id)}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </>
+                )
+              })()}
             </aside>
 
             <main className="space-y-4">
