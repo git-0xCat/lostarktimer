@@ -1,6 +1,6 @@
 import React, { ReactElement } from 'react'
 import { GameEvent } from '../common'
-import { GameEventTableCell } from '../components'
+import GameEventTableCell from '../components/GameEventTableCell'
 import { v4 as uuidv4 } from 'uuid'
 import { DateTime, Interval, Zone } from 'luxon'
 import useLocalStorage from './useLocalStorage'

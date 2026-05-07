@@ -13,7 +13,7 @@ import io, { Socket } from 'socket.io-client'
 import { MerchantAPIData, RegionKey, ServerKey } from '../util/types/types'
 import { RegionTimeZoneMapping } from '../util/static'
 import { IconSettings } from '@tabler/icons-react'
-import { MerchantConfigModal } from '../components'
+import MerchantConfigModal from '../components/modals/MerchantConfigModal'
 
 interface Merchant {
   location: string

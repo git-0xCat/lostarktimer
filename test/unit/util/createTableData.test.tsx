@@ -9,8 +9,8 @@ import React from 'react'
 import { render } from '@testing-library/react'
 import { DateTime, Interval } from 'luxon'
 
-vi.mock('../../../components', () => ({
-  GameEventTableCell: ({ gameEvent }: any) => (
+vi.mock('../../../components/GameEventTableCell', () => ({
+  default: ({ gameEvent }: any) => (
     <td data-testid="game-cell" data-uuid={gameEvent.uuid} />
   ),
 }))
