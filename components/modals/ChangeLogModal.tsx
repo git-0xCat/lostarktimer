@@ -51,13 +51,21 @@ const ChangeLogModal = ({ open, onOpenChange }: Props) => {
             <div className="space-y-1">
               <p className="text-sm font-medium text-violet-500">Planned</p>
               <ul className="text-muted-foreground list-disc space-y-1 pl-6 text-sm">
-                <li>Wandering Merchant Ships</li>
-                <li>Daily Reset Timer</li>
-                <li>Procyon Compass Checkboxes</li>
-                <li>Discord Bot</li>
+                <li>Wandering Merchants rebuild (crowdsourced sightings)</li>
               </ul>
             </div>
 
+            <Entry
+              date="5/2026"
+              items={[
+                'Site rebuilt on a modern stack and redesigned end-to-end.',
+                'Region list updated for the 2024 server merges (NA East / NA West / EU Central).',
+                'Switched to IANA timezones so DST handles itself.',
+                'Faster alarm-page loads — only the visible day is fetched.',
+                'Dark mode polish: no more white flash on reload.',
+                'Wandering Merchants page parked behind a WIP banner while the live data is rebuilt.',
+              ]}
+            />
             <Entry
               date="4/7/2022"
               items={[
