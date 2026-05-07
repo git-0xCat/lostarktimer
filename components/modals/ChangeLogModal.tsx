@@ -3,6 +3,7 @@ import React from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -41,6 +42,9 @@ const ChangeLogModal = ({ open, onOpenChange }: Props) => {
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Changelog</DialogTitle>
+          <DialogDescription className="sr-only">
+            Recent updates and planned features.
+          </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-4">

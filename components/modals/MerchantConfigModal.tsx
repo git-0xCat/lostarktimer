@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -73,6 +74,9 @@ const MerchantConfigModal = ({ open, onOpenChange }: Props) => {
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('merchant-settings')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure merchant display preferences, theme, and time format.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-x-8 gap-y-2 md:grid-cols-2">

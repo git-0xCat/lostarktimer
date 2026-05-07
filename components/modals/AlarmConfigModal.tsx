@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -142,6 +143,9 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('alarm-settings')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure alarm filtering, notifications, theme, and alert sound.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-x-8 gap-y-2 md:grid-cols-2">

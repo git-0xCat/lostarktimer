@@ -3,6 +3,7 @@ import React from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -18,6 +19,9 @@ const GitHubModal = ({ open, onOpenChange }: Props) => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>GitHub</DialogTitle>
+          <DialogDescription className="sr-only">
+            Contribute to the project or send feedback.
+          </DialogDescription>
         </DialogHeader>
         <p className="text-center">
           <a
