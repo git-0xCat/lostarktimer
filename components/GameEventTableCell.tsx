@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
+import { track } from './analytics/track'
 
 type CellProps = {
   gameEvent: GameEvent
@@ -66,8 +67,25 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
     gameEvent.disabled = until
   }
 
+  const eventId = String(gameEvent.gameEvent.id)
+
+  const disableWithDuration = (
+    until: DateTime | null | undefined,
+    duration:
+      | 'once'
+      | '12hr'
+      | 'daily-reset'
+      | 'weekly-reset'
+      | 'three-weeks'
+  ) => {
+    if (!until) return
+    track('event_disable', { eventId, duration })
+    applyDisable(until)
+  }
+
   const enable = () => {
     if (!disabledAlarms) return
+    track('event_enable', { eventId })
     const next = { ...disabledAlarms }
     delete next[gameEvent.gameEvent.id]
     gameEvent.disabled = null
@@ -83,10 +101,11 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
     return next?.end ?? DateTime.now()
   }
 
-  const disableOnce = () => applyDisable(disableAnchor())
-  const disable12Hours = () => applyDisable(disableAnchor().plus({ hours: 12 }))
+  const disableOnce = () => disableWithDuration(disableAnchor(), 'once')
+  const disable12Hours = () =>
+    disableWithDuration(disableAnchor().plus({ hours: 12 }), '12hr')
   const disableThreeWeeks = () =>
-    applyDisable(disableAnchor().plus({ hours: 336 }))
+    disableWithDuration(disableAnchor().plus({ hours: 336 }), 'three-weeks')
 
   const disableDailyReset = () => {
     let until = DateTime.now().set({
@@ -96,7 +115,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
       millisecond: 0,
     })
     if (until <= DateTime.now()) until = until.plus({ days: 1 })
-    applyDisable(until)
+    disableWithDuration(until, 'daily-reset')
   }
 
   const disableWeeklyReset = () => {
@@ -108,7 +127,7 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
       millisecond: 0,
     })
     if (until <= DateTime.now()) until = until.plus({ days: 7 })
-    applyDisable(until)
+    disableWithDuration(until, 'weekly-reset')
   }
 
   const isRepeatedEvent = REPEATED_EVENT_IDS.has(Number(gameEvent.gameEvent.id))
@@ -206,7 +225,14 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
             {isRepeatedEvent && (
               <>
                 <DropdownMenuItem
-                  onClick={() => setHideGrandPrix(!hideGrandPrix)}
+                  onClick={() => {
+                    const next = !hideGrandPrix
+                    track('group_repeats_toggle', {
+                      enabled: next,
+                      source: 'cell',
+                    })
+                    setHideGrandPrix(next)
+                  }}
                 >
                   {hideGrandPrix
                     ? t('alarms:repeated-events.show')

@@ -34,9 +34,38 @@ Self-hosted Umami instance. Wired via
 local dev and preview deploys (which don't set those vars) silently
 no-op. Only the Vercel Production environment gets both env vars.
 
-No `track(event, props)` calls yet. If we add custom event tracking
-later, define a `TrackEvent` union in `components/analytics/track.ts` and
-prefer firing from the action / setter site over the UI component.
+**Custom event tracking** lives in `components/analytics/track.ts` —
+a typed `EventMap` + `track(event, props?)` function that no-ops when
+`window.umami` isn't loaded. Properties are chosen for low-cardinality
+grouping so events chart cleanly; raw values that don't aggregate
+(volume floats) are bucketed at the call site. Calls fire from the
+setter / action site, not from the UI component, so all callers get
+tracked uniformly.
+
+| Event | Properties | Question it answers |
+| --- | --- | --- |
+| `region_change` | `from`, `to` | Geo distribution + transition flow |
+| `date_change` | `direction` (`prev`/`next`/`today`), `daysFromToday` | How far ahead/behind do users browse? |
+| `event_disable` | `eventId`, `duration` (`once`/`12hr`/`daily-reset`/`weekly-reset`/`three-weeks`) | Which events get muted, and for how long |
+| `event_enable` | `eventId` | Re-enable rate (churn off disable) |
+| `group_repeats_toggle` | `enabled`, `source` (`cell`/`settings`) | Is grand-prix-style noise getting hidden, and from where |
+| `dark_mode_toggle` | `enabled` | Theme preference |
+| `view_24hr_toggle` | `enabled` | 12hr vs 24hr |
+| `localized_time_toggle` | `enabled` | Server vs local time-zone display |
+| `hide_disabled_toggle` | `enabled` | UI density preference |
+| `move_disabled_bottom_toggle` | `enabled` | Sort preference |
+| `desktop_notifications_toggle` | `enabled`, `permission` (`granted`/`denied`/`default`) | Permission grant rate |
+| `notify_minutes_change` | `minutes` | How early do users want alerts |
+| `alert_sound_change` | `sound` | Sound preference |
+| `volume_change` | `bucket` (`low`/`mid`/`high`) | Volume preference (raw floats bucketed on commit) |
+| `reset_disabled_alarms` | — | How often the disable list gets wiped |
+| `changelog_open` | — | Is anyone reading it |
+| `github_modal_open` | — | Engagement |
+| `alarm_triggered` | `eventId`, `notifyMinutes` | Does the alarm system actually fire? Which events fire? |
+
+**Adding a new event:** add the name + property shape to the `EventMap`
+in `components/analytics/track.ts`, then call `track(name, props)`
+from the action site. Update this table.
 
 ### 3. Sentry (error + perf, production-only)
 

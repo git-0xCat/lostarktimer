@@ -7,6 +7,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { track } from './analytics/track'
 
 interface Props {
   onOpenGithub: () => void
@@ -21,7 +22,10 @@ const SideBar = ({ onOpenGithub, onOpenChangelog }: Props) => {
           variant="ghost"
           size="icon"
           aria-label="GitHub"
-          onClick={onOpenGithub}
+          onClick={() => {
+            track('github_modal_open')
+            onOpenGithub()
+          }}
           className="size-12 hover:text-sky-400"
         >
           <IconBrandGithub className="size-6" />
@@ -45,7 +49,10 @@ const SideBar = ({ onOpenGithub, onOpenChangelog }: Props) => {
           variant="ghost"
           size="icon"
           aria-label="Changelog"
-          onClick={onOpenChangelog}
+          onClick={() => {
+            track('changelog_open')
+            onOpenChangelog()
+          }}
           className="size-12 hover:text-sky-400"
         >
           <IconFileCode className="size-6" />

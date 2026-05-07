@@ -14,6 +14,7 @@ import { createTableData } from '../util/createTableData'
 import { RegionKey } from '../util/types/types'
 import { RegionTimeZoneMapping, resolveRegion } from '../util/static'
 import { isWithinNotifyWindow } from '../util/alarmTrigger'
+import { track } from '../components/analytics/track'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -469,6 +470,12 @@ const Alarms: NextPage = () => {
       (currentEventsTable.length !== 0 ||
         currentEventsTableData !== currentEventsTable)
     ) {
+      for (const ev of currEventsTable) {
+        track('alarm_triggered', {
+          eventId: String(ev.gameEvent.id),
+          notifyMinutes: notifyInMins ?? 15,
+        })
+      }
       if (alertSound && alertSound !== 'muted') {
         let s = new Howl({
           src: sounds[alertSound as AlertSoundKeys] as unknown as string,
@@ -555,14 +562,27 @@ const Alarms: NextPage = () => {
                 size="icon"
                 aria-label="Previous day"
                 className="size-11"
-                onClick={() => setSelectedDate(selectedDate.minus({ days: 1 }))}
+                onClick={() => {
+                  const next = selectedDate.minus({ days: 1 })
+                  track('date_change', {
+                    direction: 'prev',
+                    daysFromToday: Math.round(
+                      next.startOf('day').diff(serverTime.startOf('day'), 'days')
+                        .days
+                    ),
+                  })
+                  setSelectedDate(next)
+                }}
               >
                 <ChevronLeft className="size-5" />
               </Button>
               <button
                 type="button"
                 aria-label="Selected date"
-                onClick={() => setSelectedDate(serverTime)}
+                onClick={() => {
+                  track('date_change', { direction: 'today', daysFromToday: 0 })
+                  setSelectedDate(serverTime)
+                }}
                 className="bg-card hover:bg-accent flex h-11 min-w-[170px] flex-col items-center justify-center rounded-md border px-4 transition-colors"
               >
                 <span className="text-xl leading-tight font-semibold">
@@ -579,7 +599,17 @@ const Alarms: NextPage = () => {
                 size="icon"
                 aria-label="Next day"
                 className="size-11"
-                onClick={() => setSelectedDate(selectedDate.plus({ days: 1 }))}
+                onClick={() => {
+                  const next = selectedDate.plus({ days: 1 })
+                  track('date_change', {
+                    direction: 'next',
+                    daysFromToday: Math.round(
+                      next.startOf('day').diff(serverTime.startOf('day'), 'days')
+                        .days
+                    ),
+                  })
+                  setSelectedDate(next)
+                }}
               >
                 <ChevronRight className="size-5" />
               </Button>
@@ -599,6 +629,10 @@ const Alarms: NextPage = () => {
                 value={resolveRegion(regionTZName)}
                 onValueChange={(v) => {
                   const region = v as RegionKey
+                  track('region_change', {
+                    from: regionTZName ?? 'unset',
+                    to: region,
+                  })
                   setRegionTZ(RegionTimeZoneMapping[region])
                   setRegionTZName(region)
                 }}
@@ -681,7 +715,11 @@ const Alarms: NextPage = () => {
             </h2>
             <Select
               value={String(notifyInMins ?? 15)}
-              onValueChange={(v) => setNotifyInMins(Number(v))}
+              onValueChange={(v) => {
+                const minutes = Number(v)
+                track('notify_minutes_change', { minutes })
+                setNotifyInMins(minutes)
+              }}
             >
               <SelectTrigger size="sm" className="min-w-[150px]">
                 <SelectValue />

@@ -2,6 +2,7 @@ import React from 'react'
 import { Howl, Howler } from 'howler'
 import { alert1, alert2, alert3, alert4, alert5, alert6 } from '../../sounds'
 import useLocalStorage from '../../util/useLocalStorage'
+import { track, volumeBucket } from '../analytics/track'
 import { Volume1, Volume2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -130,10 +131,23 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
       return
     }
     if (Notification.permission === 'granted') {
+      track('desktop_notifications_toggle', {
+        enabled: checked,
+        permission: 'granted',
+      })
       setDesktopNotifications(checked)
     } else if (Notification.permission !== 'denied') {
       Notification.requestPermission((permission) => {
+        track('desktop_notifications_toggle', {
+          enabled: permission === 'granted' && checked,
+          permission,
+        })
         if (permission === 'granted') setDesktopNotifications(checked)
+      })
+    } else {
+      track('desktop_notifications_toggle', {
+        enabled: false,
+        permission: 'denied',
       })
     }
   }
@@ -157,9 +171,11 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
                 <Checkbox
                   id="moveDisabled"
                   checked={!!moveDisabledEventsBottom}
-                  onCheckedChange={(c) =>
-                    setMoveDisabledEventsBottom(c === true)
-                  }
+                  onCheckedChange={(c) => {
+                    const enabled = c === true
+                    track('move_disabled_bottom_toggle', { enabled })
+                    setMoveDisabledEventsBottom(enabled)
+                  }}
                 />
               }
             />
@@ -170,7 +186,11 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
                 <Checkbox
                   id="hideDisabled"
                   checked={!!hideDisabledEvents}
-                  onCheckedChange={(c) => setHideDisableEvents(c === true)}
+                  onCheckedChange={(c) => {
+                    const enabled = c === true
+                    track('hide_disabled_toggle', { enabled })
+                    setHideDisableEvents(enabled)
+                  }}
                 />
               }
             />
@@ -199,7 +219,14 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
                 <Checkbox
                   id="groupRepeats"
                   checked={!!hideGrandPrix}
-                  onCheckedChange={(c) => setHideGrandPrix(c === true)}
+                  onCheckedChange={(c) => {
+                    const enabled = c === true
+                    track('group_repeats_toggle', {
+                      enabled,
+                      source: 'settings',
+                    })
+                    setHideGrandPrix(enabled)
+                  }}
                 />
               }
             />
@@ -208,7 +235,10 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setDisabledAlarms({})}
+                onClick={() => {
+                  track('reset_disabled_alarms')
+                  setDisabledAlarms({})
+                }}
               >
                 {t('reset-disabled-events')}
               </Button>
@@ -236,7 +266,11 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
                 <Checkbox
                   id="darkMode"
                   checked={!!darkMode}
-                  onCheckedChange={(c) => setDarkMode(c === true)}
+                  onCheckedChange={(c) => {
+                    const enabled = c === true
+                    track('dark_mode_toggle', { enabled })
+                    setDarkMode(enabled)
+                  }}
                 />
               }
             />
@@ -247,7 +281,11 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
                 <Checkbox
                   id="view24Hr"
                   checked={!!view24HrTime}
-                  onCheckedChange={(c) => setView24HrTime(c === true)}
+                  onCheckedChange={(c) => {
+                    const enabled = c === true
+                    track('view_24hr_toggle', { enabled })
+                    setView24HrTime(enabled)
+                  }}
                 />
               }
             />
@@ -258,7 +296,11 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
                 <Checkbox
                   id="viewLocalized"
                   checked={!!viewLocalizedTime}
-                  onCheckedChange={(c) => setViewLocalizedTime(c === true)}
+                  onCheckedChange={(c) => {
+                    const enabled = c === true
+                    track('localized_time_toggle', { enabled })
+                    setViewLocalizedTime(enabled)
+                  }}
                 />
               }
             />
@@ -270,6 +312,7 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
               <Select
                 value={alertSound}
                 onValueChange={(v) => {
+                  track('alert_sound_change', { sound: v })
                   setAlertSound(v)
                   if (v === 'muted') return
                   new Howl({
@@ -303,7 +346,8 @@ const AlarmConfigModal = ({ open, onOpenChange }: Props) => {
                   setVolume(v)
                   Howler.volume(v)
                 }}
-                onValueCommit={() => {
+                onValueCommit={([v]) => {
+                  track('volume_change', { bucket: volumeBucket(v) })
                   if (alertSound === 'muted') return
                   Howler.stop()
                   new Howl({
