@@ -115,16 +115,7 @@ const Alarms: NextPage = () => {
       return
     }
 
-    //Toggle Daisy UI colors (e.g. bg-base-###)
-    document.documentElement.setAttribute(
-      'data-theme',
-      darkMode ? 'dark' : 'light'
-    )
-
-    //Toggle standard Tailwind colors (e.g. bg-sky-800)
-    darkMode
-      ? document.documentElement.classList.add('dark')
-      : document.documentElement.classList.remove('dark')
+    document.documentElement.classList.toggle('dark', !!darkMode)
   }, [darkMode])
 
   const [serverTime, setServerTime] = useState<DateTime>(
@@ -342,14 +333,7 @@ const Alarms: NextPage = () => {
     event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     id: number
   ) => {
-    buttons.forEach((b) => {
-      if (b.current)
-        (b.current as unknown as Element).classList.remove('btn-active')
-    })
-    let button = event.target as Element
-    button.classList.add('btn-active')
     setSelectedEventType(id)
-    // generateFullEventsTable(id)
   }
 
   const generateEventsTable = (eventType: number) => {

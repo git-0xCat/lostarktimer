@@ -52,13 +52,7 @@ const Merchants: NextPage = (props) => {
     //Prevents FoUC (Flash of Unstylized Content) by not refreshing on first mount
     if (!isMounted.current){ isMounted.current = true; return }
 
-    //Toggle Daisy UI colors (e.g. bg-base-###)
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light') 
-    
-    //Toggle standard Tailwind colors (e.g. bg-sky-800)
-    darkMode 
-      ?  document.documentElement.classList.add("dark")
-      :  document.documentElement.classList.remove("dark")
+    document.documentElement.classList.toggle('dark', !!darkMode)
   }, [darkMode])
 
   const [currDate, setCurrDate] = useState<DateTime>(DateTime.now())
@@ -335,188 +329,114 @@ const Merchants: NextPage = (props) => {
           />
         </div>
 
-        <div className="mx-auto flex w-full max-w-7xl overflow-x-auto px-4 lg:px-8">
-          <table className="table w-full">
-            <thead>
-              <tr className="relative justify-center text-center">
-                <td colSpan={2} className="bg-stone-400 dark:bg-base-200">
-                  <span>Wandering Merchants</span>
-                  <a
-                    href="https://discord.gg/HfXQpmpaD5"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline btn-warning btn-xs absolute right-48 top-4"
-                  >
-                    {t('vote')}
-                  </a>
-                  <a
-                    href="https://saint-bot.webflow.io/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute right-4 top-2 flex items-center justify-center gap-2 text-indigo-500/90 hover:underline"
-                  >
-                    {t('data-by')} SaintBot{' '}
-                    <img
-                      className="ml-2"
-                      src={saintbotImage}
-                      alt="SaintBot"
-                      width={20}
-                      height={20}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </a>
-                  <div className="absolute right-5 top-7">
-                    {t('last-updated')}:{' '}
-                    {dataLastRefreshed.toLocaleString(
-                      view24HrTime
-                        ? DateTime.TIME_24_WITH_SECONDS
-                        : DateTime.TIME_WITH_SECONDS
+        <div className="mx-auto w-full max-w-7xl px-4 lg:px-8">
+          <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+            <a
+              href="https://saint-bot.webflow.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground inline-flex items-center gap-2 hover:underline"
+            >
+              {t('data-by')} SaintBot
+              <img
+                src={saintbotImage}
+                alt=""
+                width={16}
+                height={16}
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
+            <span className="text-muted-foreground">·</span>
+            <span
+              className="text-muted-foreground tabular-nums"
+              suppressHydrationWarning
+            >
+              {t('last-updated')}:{' '}
+              {isMounted.current
+                ? dataLastRefreshed.toLocaleString(
+                    view24HrTime
+                      ? DateTime.TIME_24_WITH_SECONDS
+                      : DateTime.TIME_WITH_SECONDS
+                  )
+                : ''}
+            </span>
+            <a
+              href="https://discord.gg/HfXQpmpaD5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto inline-flex items-center rounded-md border border-amber-500/40 px-3 py-1 text-xs font-medium text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
+            >
+              {t('vote')}
+            </a>
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+            {[1, 2, 3].map((sched) => (
+              <div
+                key={`schedule-${sched}`}
+                className="bg-card rounded-lg border p-4 shadow-sm"
+              >
+                <p className="mb-2 text-sm font-semibold uppercase tracking-tight">
+                  Schedule {sched}
+                </p>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <ul className="text-muted-foreground space-y-0.5 font-mono tabular-nums">
+                    {mSchedules[sched] !== undefined &&
+                      mSchedules[sched]
+                        .slice(0, (mSchedules[sched].length - 1) / 2)
+                        .map((s) =>
+                          s.start!.setZone(
+                            viewLocalizedTime ? currDate.zone : serverTime.zone
+                          )
+                        )
+                        .sort((a, b) => a.hour - b.hour)
+                        .map((schedule) => (
+                          <li
+                            key={`merchant-schedule-${sched}-${schedule.toISO()}`}
+                          >
+                            {schedule
+                              .toLocaleString(DateTime.TIME_SIMPLE)
+                              .slice(0, -2)}
+                          </li>
+                        ))}
+                  </ul>
+                  <ul className="space-y-0.5">
+                    {sched === 1 && (
+                      <>
+                        <li>Lucas — {t('locations.Yudia')}</li>
+                        <li>Morris — {t('locations.East Luterra')}</li>
+                        <li>Mac — {t('locations.Anikka')}</li>
+                        <li>Jeffrey — {t('locations.Shushire')}</li>
+                        <li>Dorella — {t('locations.Feiton')}</li>
+                      </>
                     )}
-                  </div>
-                </td>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td
-                  className="flex flex-row justify-evenly border-b-0 bg-stone-400 px-8 py-0 text-center text-xs dark:bg-base-200"
-                  colSpan={2}
-                >
-                  <div className="flex flex-col">
-                    <span>Schedule 1</span>
-                    <br />
-                    <div className="flex flex-row">
-                      <span className="w-24 whitespace-normal text-left">
-                        <ul>
-                          {mSchedules[1] !== undefined &&
-                            mSchedules[1]
-                              .slice(0, (mSchedules[1].length - 1) / 2)
-                              .map((s) =>
-                                s.start!.setZone(
-                                  viewLocalizedTime
-                                    ? currDate.zone
-                                    : serverTime.zone
-                                )
-                              )
-                              .sort((a, b) => a.hour - b.hour)
-                              .map((schedule) => (
-                                <li
-                                  className="mr-4 text-center"
-                                  key={`merchant-schedule-1-${schedule.toISO()}`}
-                                >
-                                  {schedule
-                                    .toLocaleString(DateTime.TIME_SIMPLE)
-                                    .slice(0, -2)}
-                                </li>
-                              ))}
-                        </ul>
-                      </span>
-                      <br />
-                      <span className="text-left">
-                        <ul>
-                          <li>Lucas - {t('locations.Yudia')}</li>
-                          <li>Morris - {t('locations.East Luterra')}</li>
-                          <li>Mac - {t('locations.Anikka')}</li>
-                          <li>Jeffrey - {t('locations.Shushire')}</li>
-                          <li>Dorella - {t('locations.Feiton')}</li>
-                        </ul>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col">
-                    <span>Schedule 2</span>
-                    <br />
-                    <div className="flex flex-row">
-                      <span className="w-24 whitespace-normal text-left">
-                        <ul>
-                          {mSchedules[2] !== undefined &&
-                            mSchedules[2]
-                              .slice(0, (mSchedules[2].length - 1) / 2)
-                              .map((s) =>
-                                s.start!.setZone(
-                                  viewLocalizedTime
-                                    ? currDate.zone
-                                    : serverTime.zone
-                                )
-                              )
-                              .sort((a, b) => a.hour - b.hour)
-                              .map((schedule) => (
-                                <li
-                                  className="mr-4 text-center"
-                                  key={`merchant-schedule-2-${schedule.toISO()}`}
-                                >
-                                  {schedule
-                                    .toLocaleString(DateTime.TIME_SIMPLE)
-                                    .slice(0, -2)}
-                                </li>
-                              ))}
-                        </ul>
-                      </span>
-                      <span className="text-left">
-                        <ul>
-                          <li>Malone - {t('locations.West Luterra')}</li>
-                          <li>Burt - {t('locations.East Luterra')}</li>
-                          <li>Oliver - {t('locations.Tortoyk')}</li>
-                          <li>Nox - {t('locations.Arthetine')}</li>
-                          <li>Aricer - {t('locations.Rohendel')}</li>
-                          <li>Rayni - {t('locations.Punika')}</li>
-                        </ul>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col">
-                    <span>Schedule 3</span>
-                    <br />
-                    <div className="flex flex-row">
-                      <span className="w-24 whitespace-normal text-left">
-                        <ul>
-                          {mSchedules[3] !== undefined &&
-                            mSchedules[3]
-                              .slice(0, (mSchedules[3].length - 1) / 2)
-                              .map((s) =>
-                                s.start!.setZone(
-                                  viewLocalizedTime
-                                    ? currDate.zone
-                                    : serverTime.zone
-                                )
-                              )
-                              .sort((a, b) => a.hour - b.hour)
-                              .map((schedule) => (
-                                <li
-                                  className="mr-4 text-center"
-                                  key={`merchant-schedule-3-${schedule.toISO()}`}
-                                >
-                                  {schedule
-                                    .toLocaleString(DateTime.TIME_SIMPLE)
-                                    .slice(0, -2)}
-                                </li>
-                              ))}
-                        </ul>
-                      </span>
-                      <span className="text-left">
-                        <ul>
-                          <li>Ben - {t('locations.Rethramis')}</li>
-                          <li>Evan - {t('locations.South Vern')}</li>
-                          <li>Peter - {t('locations.North Vern')}</li>
-                          <li>Laitir - {t('locations.Yorn')}</li>
-                        </ul>
-                      </span>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr className="flex flex-row">
-                <td className="w-full bg-stone-400 dark:bg-base-200">
-                  <table className="w-full">
-                    <thead>
-                      <tr></tr>
-                    </thead>
-                    <tbody>{merchantTableData}</tbody>
-                  </table>
-                </td>
-              </tr>
-            </tbody>
+                    {sched === 2 && (
+                      <>
+                        <li>Malone — {t('locations.West Luterra')}</li>
+                        <li>Burt — {t('locations.East Luterra')}</li>
+                        <li>Oliver — {t('locations.Tortoyk')}</li>
+                        <li>Nox — {t('locations.Arthetine')}</li>
+                        <li>Aricer — {t('locations.Rohendel')}</li>
+                        <li>Rayni — {t('locations.Punika')}</li>
+                      </>
+                    )}
+                    {sched === 3 && (
+                      <>
+                        <li>Ben — {t('locations.Rethramis')}</li>
+                        <li>Evan — {t('locations.South Vern')}</li>
+                        <li>Peter — {t('locations.North Vern')}</li>
+                        <li>Laitir — {t('locations.Yorn')}</li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <table className="w-full">
+            <tbody>{merchantTableData}</tbody>
           </table>
         </div>
       </div>
