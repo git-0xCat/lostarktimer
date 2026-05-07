@@ -1,6 +1,9 @@
 {
   "private": true,
   "scripts": {
+    "data:days": "node scripts/build-day-data.mjs",
+    "predev": "npm run data:days",
+    "prebuild": "npm run data:days",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

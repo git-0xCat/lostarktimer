@@ -78,7 +78,20 @@ const eventTypeIconMapping: Array<APIEventType> = Object.entries(
   return new APIEventType(Number(idx), name, url)
 })
 
-const allEventData: Record<string, any> = require('../data/data.json')
+// data/days/<month>-<day>.json files are produced by
+// scripts/build-day-data.mjs (see prebuild npm script). Each file
+// contains only that day's events keyed by type, so we never load
+// more than ~5–8 KB at a time. The webpack dynamic-import below
+// turns each into a fingerprinted chunk on the static-chunk URL.
+type DayData = Record<string, unknown>
+
+const loadDayData = (month: number, day: number): Promise<DayData> =>
+  import(
+    /* webpackChunkName: "alarms-day-[request]" */
+    `../data/days/${month}-${day}.json`
+  )
+    .then((m) => (m.default ?? m) as DayData)
+    .catch(() => ({}))
 
 const sounds = {
   'Alert 1': alert1,
@@ -229,95 +242,112 @@ const Alarms: NextPage = () => {
       setDisabledAlarms(disabledAlarms)
     }
   }, [serverTime.minute])
-  // read and populate all game events
+  // Dynamic-import the per-day data chunk for the selected date.
+  // null = haven't loaded yet, {} = no events for that day.
+  const [dayData, setDayData] = useState<DayData | null>(null)
+
   useEffect(() => {
-    if (!mounted || regionTZ === undefined) return
+    if (!mounted) return
+    let cancelled = false
+    setDayData(null)
+    loadDayData(selectedDate.month, selectedDate.day).then((d) => {
+      if (!cancelled) setDayData(d)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [mounted, selectedDate.month, selectedDate.day])
+
+  // Build GameEvent objects for the day whenever the day's data
+  // (or anything that affects scheduling math) changes.
+  useEffect(() => {
+    if (!mounted || regionTZ === undefined || dayData === null) return
     let gameEvents: Array<GameEvent> = []
     let disabledAlarmsKeys = Object.keys(disabledAlarms || {})
-    Object.entries(allEventData).forEach((eventType) => {
-      const [type, monthDayMap] = eventType as [string, any]
-      let et = eventTypeIconMapping.find((et) => et.id.toString() === type)
+
+    Object.entries(dayData).forEach(([type, ilvlOrList]) => {
+      const et = eventTypeIconMapping.find((et) => et.id.toString() === type)
       if (!et) return
-      for (const [month, days] of Object.entries(monthDayMap) as [
-        string,
-        any
-      ]) {
-        for (const [day, events] of Object.entries(days) as [string, any]) {
-          for (const [iLvl, event] of Object.entries(events) as [string, any]) {
-            for (const [eventId, eventTime] of Object.entries(event) as [
-              string,
-              any
-            ]) {
-              let gt = eventIDNameMapping.find((gt) => gt.id === eventId)
-              if (!gt) continue
 
-              let gameEvent = new GameEvent(et, gt)
-              eventTime.forEach((time: string, idx: number) => {
-                const [startTime, endTime] = time.split('-')
-                const [startHr, startMin] = startTime.split(':')
-                const [endHr, endMin] = endTime?.split(':') ?? ['', '']
-                let start = DateTime.fromObject(
-                  {
-                    year: currDate.year,
-                    month: Number(month),
-                    day: Number(day),
-                    hour: Number(startHr),
-                    minute: Number(startMin),
-                  },
-                  { zone: regionTZ }
-                )
-                let id = Number(gt.id)
-                if (
-                  (7000 <= id && id < 8000 && ![7013, 7035].includes(id)) ||
-                  [
-                    1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
-                    5002, 5003, 5004, 5005, 6007, 6008, 6009, 6010, 6011,
-                  ].includes(id)
-                ) {
-                  start = start.plus({ minutes: 10 })
-                }
-                let end = DateTime.fromObject(
-                  {
-                    year: start.year,
-                    month: start.month,
-                    day: start.day,
-                    hour: Number(endHr != '' ? endHr : start.hour),
-                    minute: Number(endMin != '' ? endMin : start.minute),
-                  },
-                  { zone: regionTZ }
-                )
-
-                gameEvent.addTime(Interval.fromDateTimes(start, end))
-                if (
-                  disabledAlarmsKeys.includes(gameEvent.gameEvent.id) &&
-                  disabledAlarms
-                )
-                  gameEvent.disabled =
-                    DateTime.fromMillis(
-                      disabledAlarms[gameEvent.gameEvent.id]
-                    ) || null
-              })
-              gameEvents.push(gameEvent)
-            }
+      // Source uses two shapes interchangeably at this level: dicts
+      // ({ ilvl: { event_id: [times] } }) for most types, and bare
+      // arrays ([{ event_id: [times] }, ...]) for type 2. Normalize
+      // to a single iterable of (event_id, times) pairs.
+      const eventEntries: Array<[string, string[]]> = []
+      const visit = (node: unknown) => {
+        if (!node || typeof node !== 'object') return
+        for (const [key, value] of Object.entries(node)) {
+          if (Array.isArray(value) && typeof value[0] === 'string') {
+            eventEntries.push([key, value as string[]])
+          } else {
+            visit(value)
           }
         }
       }
+      visit(ilvlOrList)
+
+      for (const [eventId, eventTimes] of eventEntries) {
+        const gt = eventIDNameMapping.find((g) => g.id === eventId)
+        if (!gt) continue
+
+        const gameEvent = new GameEvent(et, gt)
+        eventTimes.forEach((time) => {
+          const [startTime, endTime] = time.split('-')
+          const [startHr, startMin] = startTime.split(':')
+          const [endHr, endMin] = endTime?.split(':') ?? ['', '']
+          let start = DateTime.fromObject(
+            {
+              year: currDate.year,
+              month: selectedDate.month,
+              day: selectedDate.day,
+              hour: Number(startHr),
+              minute: Number(startMin),
+            },
+            { zone: regionTZ }
+          )
+          const id = Number(gt.id)
+          if (
+            (7000 <= id && id < 8000 && ![7013, 7035].includes(id)) ||
+            [
+              1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
+              5002, 5003, 5004, 5005, 6007, 6008, 6009, 6010, 6011,
+            ].includes(id)
+          ) {
+            start = start.plus({ minutes: 10 })
+          }
+          const end = DateTime.fromObject(
+            {
+              year: start.year,
+              month: start.month,
+              day: start.day,
+              hour: Number(endHr !== '' ? endHr : start.hour),
+              minute: Number(endMin !== '' ? endMin : start.minute),
+            },
+            { zone: regionTZ }
+          )
+          if (!start.isValid || !end.isValid) return
+          // If the source emits "23:00-01:00" the end ends up before
+          // start (same calendar day). Roll end forward a day so the
+          // resulting Interval is valid.
+          const adjustedEnd = end < start ? end.plus({ days: 1 }) : end
+          const interval = Interval.fromDateTimes(start, adjustedEnd)
+          if (!interval.isValid) return
+          gameEvent.addTime(interval)
+          if (
+            disabledAlarmsKeys.includes(gameEvent.gameEvent.id) &&
+            disabledAlarms
+          )
+            gameEvent.disabled =
+              DateTime.fromMillis(disabledAlarms[gameEvent.gameEvent.id]) ||
+              null
+        })
+        gameEvents.push(gameEvent)
+      }
     })
 
-    const todayEvents = gameEvents.filter(
-      (ge) =>
-        ge.times.find((t) => {
-          return t.start && t.start.day === selectedDate.day
-        }) !== undefined &&
-        ge.times.length &&
-        ge.times.at(0)?.start?.day === selectedDate.day &&
-        (ge.times.at(-1)?.start?.day === selectedDate.plus({ days: 1 }).day ||
-          ge.times.at(-1)?.start?.day === selectedDate.day)
-    )
-
     setGameEvents(gameEvents)
-    setTodayEvents(todayEvents)
-  }, [regionTZ, selectedDate, viewLocalizedTime, view24HrTime])
+    setTodayEvents(gameEvents)
+  }, [regionTZ, selectedDate, dayData, viewLocalizedTime, view24HrTime])
 
   // (re)generate full events table and current events table on dependency array change (mostly config changes)
   useEffect(() => {
