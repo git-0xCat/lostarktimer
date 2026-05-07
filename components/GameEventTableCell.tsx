@@ -11,7 +11,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -75,15 +74,19 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
     setDisabledAlarms(next)
   }
 
-  const latestEnd = (): DateTime | null => {
+  // When the event has a known upcoming occurrence today, anchor the
+  // disable window to that interval's end. Otherwise (event has already
+  // happened for the day) anchor to "now" so the action still does
+  // something — disable just shifts the user-visible window forward.
+  const disableAnchor = (): DateTime => {
     const next = gameEvent.latest(serverTime)
-    return next?.end ?? null
+    return next?.end ?? DateTime.now()
   }
 
-  const disableOnce = () => applyDisable(latestEnd())
-  const disable12Hours = () => applyDisable(latestEnd()?.plus({ hours: 12 }))
+  const disableOnce = () => applyDisable(disableAnchor())
+  const disable12Hours = () => applyDisable(disableAnchor().plus({ hours: 12 }))
   const disableThreeWeeks = () =>
-    applyDisable(latestEnd()?.plus({ hours: 336 }))
+    applyDisable(disableAnchor().plus({ hours: 336 }))
 
   const disableDailyReset = () => {
     let until = DateTime.now().set({
@@ -208,7 +211,6 @@ const GameEventTableCell = (props: CellProps): React.ReactElement => {
               </DropdownMenuItem>
             ) : (
               <>
-                <DropdownMenuLabel>{t('alarms:disable.until')}</DropdownMenuLabel>
                 <DropdownMenuItem onClick={disableOnce}>
                   {t('alarms:disable.once')}
                 </DropdownMenuItem>

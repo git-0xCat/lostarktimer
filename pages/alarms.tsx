@@ -654,7 +654,7 @@ const Alarms: NextPage = () => {
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
-            <aside className="flex flex-row flex-wrap gap-1 lg:flex-col">
+            <aside className="flex flex-row flex-wrap gap-1 lg:flex-col lg:pt-2">
               {(() => {
                 const filterClass = (active: boolean) =>
                   cn(

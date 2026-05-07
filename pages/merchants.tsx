@@ -226,6 +226,18 @@ const Merchants: NextPage = (props) => {
 
       <div className="bg-background min-h-screen pb-16">
         <div className="mx-auto w-full max-w-[1800px] px-4 py-6 lg:px-6">
+          <div className="bg-card mb-6 flex flex-col gap-2 rounded-lg border border-amber-500/40 p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
+            <span className="inline-flex items-center self-start rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+              Work in Progress
+            </span>
+            <p className="text-muted-foreground text-sm">
+              Wandering merchant tracking is being rebuilt around community
+              submissions. Soon you&apos;ll be able to vote a sighting up or
+              down to crowdsource accurate spawn data instead of relying on
+              the stale broadcast feed.
+            </p>
+          </div>
+
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">
